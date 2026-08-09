@@ -14,6 +14,7 @@ interface IssueLoggerProps {
 }
 
 export function IssueLogger({ faultCategories, stageName, jobId, jobName, productName, onSubmit, onBack }: IssueLoggerProps) {
+
   const options = [...faultCategories, OTHER_FAULT_CATEGORY];
   const [selectedId, setSelectedId] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
