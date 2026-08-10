@@ -214,6 +214,11 @@ export default function JobBuilder() {
         lineId: lineId || null,
         scheduledStartAt: new Date(scheduledStartAt).toISOString(),
         status,
+        // No explicit stageOrder field — the backend (buildStageRows)
+        // derives each stage's order from its position in this array, so
+        // the drag-and-drop reordering above is what actually determines
+        // execution order. Sending stages out of the intended sequence
+        // silently reorders the pipeline.
         stages: stages.map((s) => ({
           blueprintId: s.blueprintId,
           stageName: s.stageName,
@@ -242,6 +247,10 @@ export default function JobBuilder() {
     }
   };
 
+  // Only highlights a stage once an error is already showing — an
+  // unassigned stage has no visual warning at all until the manager
+  // actually tries to activate and hits the "every stage needs an operator"
+  // error below. There's no live/continuous validation as stages are added.
   const invalidStage = (s: StageDraft) => !!error && !s.operatorId;
 
   const totalDuration = stages.reduce((acc, s) => acc + s.estimatedDurationMinutes, 0);

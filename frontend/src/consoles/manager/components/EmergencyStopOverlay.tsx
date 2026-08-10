@@ -58,6 +58,11 @@ export function EmergencyStopOverlay({ onClose, onStopped }: EmergencyStopOverla
 
   const canSubmit = !!reason && (scope === 'facility_wide' || !!selectedJobId);
 
+  // Deliberate friction against an accidental trigger on a destructive
+  // action: +2% every 30ms reaches 100% in exactly 1.5s, matching the
+  // caption below the button. Changing either the increment or interval
+  // changes how long the hold actually takes without changing what the
+  // caption tells the manager to expect — keep them in sync.
   const startHold = () => {
     if (!canSubmit || submitting) return;
     setIsHolding(true);

@@ -154,10 +154,11 @@ function JobTimelinesTab({ data }: { data: JobHistoryRow[] }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-        <div className="col-span-4">Job / Product</div>
+        <div className="col-span-3">Job / Product</div>
+        <div className="col-span-2">Date</div>
         <div className="col-span-2 text-center">Status</div>
         <div className="col-span-2 text-center">Target / Actual</div>
-        <div className="col-span-2 text-right">Est. Duration</div>
+        <div className="col-span-1 text-right">Est.</div>
         <div className="col-span-2 text-right">Actual Duration</div>
       </div>
 
@@ -173,7 +174,7 @@ function JobTimelinesTab({ data }: { data: JobHistoryRow[] }) {
               onClick={() => toggle(job.id)}
               className="w-full grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-slate-50 transition-colors text-left"
             >
-              <div className="col-span-4 flex items-center gap-3 min-w-0">
+              <div className="col-span-3 flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-navy-100 flex items-center justify-center flex-shrink-0">
                   <Package size={16} className="text-navy-600" strokeWidth={2.5} />
                 </div>
@@ -182,11 +183,14 @@ function JobTimelinesTab({ data }: { data: JobHistoryRow[] }) {
                   <p className="text-xs text-slate-500 truncate">{job.jobId} · {job.lineName}</p>
                 </div>
               </div>
+              <div className="col-span-2 text-sm text-slate-600">
+                {job.scheduledStartAt ? new Date(job.scheduledStartAt).toLocaleString() : '—'}
+              </div>
               <div className="col-span-2 flex justify-center">{statusBadge(job.status)}</div>
               <div className="col-span-2 text-center text-sm text-slate-700">
                 {job.targetQuantity.toLocaleString()} / {job.actualProducedQty != null ? job.actualProducedQty.toLocaleString() : '—'} {job.unit}
               </div>
-              <div className="col-span-2 text-right text-sm font-medium text-slate-600">{totalEstimated} min</div>
+              <div className="col-span-1 text-right text-sm font-medium text-slate-600">{totalEstimated} min</div>
               <div className="col-span-2 flex items-center justify-end gap-2">
                 <span className="text-sm font-bold text-slate-900">{anyActual ? `${totalActual} min` : '—'}</span>
                 {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
@@ -338,6 +342,12 @@ function DowntimeFaultsTab({ downtime, faults }: { downtime: DowntimeRecord[]; f
 }
 
 function ScrapTrackingTab({ scrapData, batchData }: { scrapData: ScrapRecord[]; batchData: BatchLogRow[] }) {
+  // Sums s.quantity across all matching records regardless of s.unit — if
+  // scrap for the same waste type or line is ever logged in mixed units
+  // (kg alongside liters or units), this total blends them into one number
+  // with no unit conversion. Fine today if scrap logging happens to be
+  // consistent per waste type/line in practice, but worth checking before
+  // trusting this total if that assumption ever breaks.
   const byWasteType = useMemo(() => {
     const agg: Record<string, number> = {};
     scrapData.forEach((s) => {
@@ -630,6 +640,11 @@ export function HistoricalAnalytics() {
 
   const handleExport = () => {
     if (!data) return;
+    // Only the free-text-ish fields (job name, fault title, downtime
+    // reason) are quoted — lineName, jobId, and the other fields below
+    // aren't escaped at all. A line name or product name that ever
+    // contains a comma would silently shift every column after it in the
+    // exported CSV.
     const lines = [
       'Type,Reference,Line,Date,Value,Details',
       ...data.jobHistory.map(

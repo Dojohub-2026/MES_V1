@@ -7,6 +7,10 @@ const ERP_SERVICE_PASSWORD = process.env.ERP_SERVICE_PASSWORD;
 
 // Confirmed against their live server: login requires a "username" field
 // (not "identifier") — response shape for the token still unverified.
+// Called fresh on every push rather than caching a token: the alternative
+// saves one HTTP round trip per completed job but adds a whole class of
+// "token expired mid-cache" bugs for very little benefit, since pushes
+// only happen once per job completion, not on any hot path.
 async function loginToErp() {
   const res = await fetch(`${ERP_API_URL}/auth/login`, {
     method: 'POST',
@@ -27,6 +31,9 @@ async function pushProductionData(jobId) {
   }
 
   const job = await prisma.job.findUnique({ where: { id: jobId }, include: PRODUCTION_DATA_INCLUDE });
+  // Silently no-ops for manually-created jobs — there's no ERP work order
+  // to report data back against, so this isn't an error condition, just
+  // nothing to do.
   if (!job || job.source !== 'ERP' || !job.externalWorkOrderId) {
     return;
   }

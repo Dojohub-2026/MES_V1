@@ -35,6 +35,14 @@ function loadStoredUser(): AuthUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(loadStoredUser);
 
+  // The cleanup's condition is inverted from what it looks like it should
+  // be: `user` here is the value captured when *this* effect ran, so
+  // `!user` is only true for a run that never called connectSocket() in
+  // the first place — the run that logs in (user goes truthy) never
+  // triggers this cleanup's disconnectSocket() when logging back out. In
+  // practice this doesn't cause a stuck connection only because logout()
+  // below calls disconnectSocket() directly; this effect's cleanup isn't
+  // actually what's tearing the connection down.
   useEffect(() => {
     if (user) connectSocket();
     return () => {

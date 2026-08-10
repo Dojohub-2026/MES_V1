@@ -27,6 +27,11 @@ async function getOverview(req, res) {
         }),
       ]);
 
+    // This is "what share of this month's planned target quantity belongs
+    // to jobs that reached COMPLETED", not "how much was actually
+    // produced vs. targeted" — both sides of the ratio use targetQuantity,
+    // never actualProducedQty. A job that finished under- or over-target
+    // still counts as its full target quantity here.
     const totalTarget = monthlyJobs.reduce((sum, job) => sum + job.targetQuantity, 0);
     const completedTarget = monthlyJobs
       .filter((job) => job.status === 'COMPLETED')
@@ -119,6 +124,9 @@ async function getAnalytics(req, res) {
 
     const startDate = req.query.startDate ? new Date(req.query.startDate) : defaultStart;
     const endDate = req.query.endDate ? new Date(req.query.endDate) : now;
+    // Pushed to the end of the day — a bare date like "2026-08-04" parses
+    // as midnight, which would otherwise exclude everything logged during
+    // that day from the range entirely.
     const endDateInclusive = new Date(endDate);
     endDateInclusive.setHours(23, 59, 59, 999);
     const dateRange = { gte: startDate, lte: endDateInclusive };

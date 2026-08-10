@@ -126,6 +126,10 @@ async function resolveFault(req, res) {
       include: { job: { include: { line: true } } },
     });
 
+    // Same pattern as runtimeController's ensureOwnedStage: ownership is
+    // the access check, and a mismatch reads as "not found" rather than
+    // "forbidden" so a manager can't probe for faults on lines they don't
+    // own.
     if (!fault || fault.job.line?.managerId !== req.user.id) {
       return res.status(404).json({ message: 'Fault not found' });
     }
@@ -170,6 +174,10 @@ async function search(req, res) {
         orderBy: { createdAt: 'desc' },
         take: 6,
       }),
+      // Unlike jobs and faults above, operator results aren't scoped to
+      // this manager's own lines — any manager searching can find any
+      // active operator system-wide. Matches getOperators below; operators
+      // aren't modeled as belonging to a specific manager or line.
       prisma.user.findMany({
         where: {
           role: 'OPERATOR',

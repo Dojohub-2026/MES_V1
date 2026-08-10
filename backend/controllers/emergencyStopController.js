@@ -1,9 +1,20 @@
 const prisma = require('../prismaClient');
 const { emitToOperator, emitToManager, emitToExecutives } = require('../socket');
 
+// Deliberately excludes PAUSED (an operator already paused that stage
+// themselves — leave it alone rather than double-pausing) and COMPLETED
+// (already done, nothing to stop). Only stages that were genuinely in
+// progress or waiting to start get swept into the emergency pause.
 const ACTIVE_STAGE_STATUSES = ['PENDING', 'AVAILABLE', 'RUNNING'];
+// Tags the downtime/fault records this controller creates so resumeJob can
+// find and close exactly those records later, without touching downtime a
+// manager logged manually or faults an operator reported on their own.
 const EMERGENCY_CATEGORY = 'emergency_stop';
 
+// One FaultLog per job, not per stage — even when several stages get
+// individually marked PAUSED below, there's a single record representing
+// "this job was emergency-stopped", which is what resumeJob looks for and
+// resolves when the manager clears it.
 async function pauseJobWithFault(tx, job, reason, notes, managerId) {
   const stages = await tx.jobStage.findMany({
     where: { jobId: job.id, status: { in: ACTIVE_STAGE_STATUSES } },
@@ -58,6 +69,11 @@ async function resumeJob(tx, job, resumeNotes, managerId) {
   const now = new Date();
   const stageUpdates = [];
 
+  // A stage resumes to RUNNING only if it had an open ProcessSession when
+  // the stop hit — meaning an operator was actively mid-task on it.
+  // Anything that hadn't been started yet (no open session) goes back to
+  // AVAILABLE instead, rather than every paused stage resuming as if work
+  // was already underway.
   for (const stage of stages) {
     const nextStatus = stage.sessions.length > 0 ? 'RUNNING' : 'AVAILABLE';
     await tx.jobStage.update({ where: { id: stage.id }, data: { status: nextStatus } });
@@ -91,6 +107,10 @@ async function resumeJob(tx, job, resumeNotes, managerId) {
   return stageUpdates;
 }
 
+// Fans a single event out to every affected operator's own room, the
+// triggering manager, and all Executives at once (see socket.js for what
+// each room means) — so everyone with a stake in the affected jobs finds
+// out in the same tick, not just whoever made the request.
 function notify(event, jobs, operatorIds, managerId, extra) {
   const payload = {
     jobIds: jobs.map((j) => j.jobId),

@@ -11,3 +11,9 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// No response interceptor for 401s — when the 8h token expires, there's no
+// automatic logout or redirect to the login screen. Each request that
+// fails after expiry just surfaces as whatever error handling the calling
+// component already has; the user stays "logged in" in the UI until they
+// notice something isn't working and refresh or sign out manually.

@@ -74,6 +74,15 @@ async function receiveWorkOrder(req, res) {
         }))
       : [];
 
+    // Retries on any unique-constraint violation, on the assumption it's
+    // the randomly-generated jobId colliding (astronomically unlikely, but
+    // cheap to guard against). The externalWorkOrderId duplicate case is
+    // already handled above via the upfront findUnique check — but if two
+    // dispatches for the same work order genuinely race each other, both
+    // could pass that check before either inserts, and this loop would
+    // then exhaust all 5 attempts hitting the same externalWorkOrderId
+    // conflict rather than the jobId it's actually meant to route around,
+    // surfacing as a raw 500 instead of the clean 409 above.
     let attempts = 0;
     let job;
     while (attempts < 5) {

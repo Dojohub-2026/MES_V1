@@ -73,7 +73,7 @@ async function createJob(req, res) {
           scheduledStartAt: startTime,
           scheduledEndAt,
           startedAt: jobStatus === 'ACTIVE' ? new Date() : null,
-          createdById: req.user.id, // ⚠️ confirm this matches the field your authenticateToken sets
+          createdById: req.user.id, // matches authController's jwt.sign payload ({ id, name, role })
           stages: { create: stageRows },
         },
         include: { stages: true },

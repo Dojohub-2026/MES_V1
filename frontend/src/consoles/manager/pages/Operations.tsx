@@ -142,6 +142,9 @@ export function Operations() {
   const [sendResult, setSendResult] = useState<Record<string, { ok: boolean; message: string } | undefined>>({});
   const [previewJob, setPreviewJob] = useState<{ id: string; name: string } | null>(null);
 
+  // Draft jobs include ones with no line yet (e.g. an unmatched ERP work
+  // order) — the backend shows those to every manager. Active/completed
+  // jobs are strictly scoped to lines this manager actually owns.
   const loadAll = useCallback(() => {
     return Promise.all([
       api.get<{ lines: AssignedLine[] }>('/manager/lines'),
@@ -176,6 +179,8 @@ export function Operations() {
         [jobId]: { ok: false, message: err?.response?.data?.message || 'Failed to send production data to ERP.' },
       }));
     } finally {
+      // Closes the preview modal either way — success or failure both drop
+      // back to the card, where sendResult renders the outcome inline.
       setSendingId(null);
       setPreviewJob(null);
     }

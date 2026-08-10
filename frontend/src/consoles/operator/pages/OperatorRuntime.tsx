@@ -409,6 +409,11 @@ export function OperatorRuntime() {
   const [isInterruptionOpen, setIsInterruptionOpen] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  // Checklist progress lives only in this component's state — it's never
+  // sent to or loaded from the backend. If the operator navigates away and
+  // back, or refreshes the page, mid-stage checklist progress resets to
+  // empty and every item has to be re-checked, even though the stage
+  // itself is still RUNNING.
   const [checklistChecked, setChecklistChecked] = useState<Set<string>>(new Set());
   const [checklistBlockingAction, setChecklistBlockingAction] = useState<'start' | 'end' | null>(null);
   const [qcAnswers, setQcAnswers] = useState<Record<string, QcAnswer>>({});
@@ -444,6 +449,11 @@ export function OperatorRuntime() {
     loadBatches();
   }, [loadDetail, loadBatches]);
 
+  // Elapsed time is computed from the server-recorded actualStartedAt
+  // timestamp every tick, not accumulated locally — so a page refresh or
+  // navigating away and back still shows the correct elapsed time
+  // immediately, rather than resetting to zero like the checklist state
+  // above does.
   useEffect(() => {
     if (!detail?.actualStartedAt) {
       setElapsedSeconds(0);
@@ -494,6 +504,11 @@ export function OperatorRuntime() {
 
   const isRunning = detail?.status === 'RUNNING';
   const isPaused = detail?.status === 'PAUSED';
+  // A stage can be PAUSED for two different reasons: the operator paused it
+  // themselves (job stays ACTIVE), or a manager triggered Emergency Stop on
+  // the whole job (job goes PAUSED too). Only the second case locks out the
+  // self-service Resume button — mirrors the same check in the backend's
+  // runtimeController.resumeStage.
   const isEmergencyStop = isPaused && detail?.jobStatus === 'PAUSED';
 
   const timing = detail?.checklistValidationTiming ?? null;
@@ -714,6 +729,12 @@ export function OperatorRuntime() {
         <ChecklistBlockerBanner
           action={checklistBlockingAction}
           timing={timing}
+          // Both branches of this ternary currently evaluate to the same
+          // value — remainingRequired isn't actually split by start vs.
+          // end timing. Only matters in practice if a blueprint uses
+          // checklistValidationTiming: 'both' with different items required
+          // at start vs. completion; today the banner would show the same
+          // "remaining" count regardless of which action triggered it.
           remaining={checklistBlockingAction === 'start' ? remainingRequired : remainingRequired}
           onDismiss={() => setChecklistBlockingAction(null)}
         />

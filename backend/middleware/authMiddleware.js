@@ -1,5 +1,11 @@
 const jwt = require('jsonwebtoken');
 
+// No fallback secret here (unlike some other systems that default to a dev
+// string) — if JWT_SECRET is ever unset, every token fails verification
+// rather than silently accepting one signed with a guessable default.
+// External callers (ERP, etc.) must get their token from this server's own
+// /api/auth/login; a token signed elsewhere, even with the same claim
+// shape, will never verify here unless it was signed with this exact secret.
 function authenticateToken(req, res, next) {
   const authorizationHeader = req.headers.authorization;
 

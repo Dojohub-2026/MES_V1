@@ -25,7 +25,13 @@ const emergencyStopRoutes = require('./routes/emergencyStopRoutes');
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(helmet());
+// helmet blocks the CSP by default in a way that breaks Swagger UI's inline
+// assets — contentSecurityPolicy: false only on this route is the standard
+// fix, rather than disabling helmet's CSP globally.
+app.use(helmet({ contentSecurityPolicy: false }));
+// Wide open, same reasoning as socket.js's CORS config — multiple deployed
+// frontend origins, no secret this is meant to protect beyond the JWT check
+// on each route.
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
@@ -53,6 +59,10 @@ app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
 
+// Express normally hides this by wrapping it inside app.listen() — it's
+// created explicitly here so Socket.io can attach to the exact same HTTP
+// server instance, letting both the REST API and WebSocket traffic share
+// one port.
 const httpServer = http.createServer(app);
 initSocket(httpServer);
 

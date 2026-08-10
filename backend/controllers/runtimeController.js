@@ -118,6 +118,11 @@ async function getStageDetail(req, res) {
   }
 }
 
+// The ownership check IS the security boundary for every runtime action
+// below — filtering by operatorId in the same query means a stage assigned
+// to someone else comes back as null, and every caller turns that into a
+// 404 rather than a 403. An operator can never learn that another
+// operator's stage exists, let alone touch it.
 async function ensureOwnedStage(stageId, operatorId) {
   return prisma.jobStage.findFirst({ where: { id: stageId, operatorId } });
 }
@@ -191,6 +196,11 @@ async function resumeStage(req, res) {
     const stage = await ensureOwnedStage(req.params.id, req.user.id);
     if (!stage) return res.status(404).json({ message: 'Stage not found' });
 
+    // Two different things can put a stage in PAUSED, and only one of them
+    // is resumable from here. An operator pausing their own stage (below)
+    // never touches Job.status — but Emergency Stop (see
+    // emergencyStopController) pauses the whole job, and that's the signal
+    // checked here to block a self-service resume until a manager clears it.
     const job = await prisma.job.findUnique({ where: { id: stage.jobId }, select: { status: true } });
     if (job?.status === 'PAUSED') {
       return res.status(403).json({
@@ -291,6 +301,11 @@ async function completeStage(req, res) {
     const managerId = await getJobManagerId(stage.jobId);
     emitToManager(managerId, 'stage:updated', { stageId: stage.id, jobId: stage.jobId, status: 'COMPLETED', jobCompleted });
 
+    // Fire-and-forget: the operator's "complete stage" request returns
+    // immediately either way. If the ERP push fails (network, auth, ERP
+    // validation), it's only visible in the server logs here — neither the
+    // operator nor the manager sees an error in the UI. A manager can
+    // retry it manually later from Operations (see jobController.sendToErp).
     if (jobCompleted) {
       erpClient.pushProductionData(stage.jobId).catch((err) => {
         console.error('Failed to push production data to ERP', err);
@@ -330,6 +345,11 @@ async function logQuantity(req, res) {
     const stage = await ensureOwnedStage(req.params.id, req.user.id);
     if (!stage) return res.status(404).json({ message: 'Stage not found' });
 
+    // An operator can log several quantity batches within the same run of
+    // a stage (e.g. one entry per physical batch of bottles filled), so
+    // this reuses whatever session is currently open rather than requiring
+    // a fresh start/stop around every single entry. A session only gets
+    // created here as a fallback in case one somehow isn't already open.
     let session = await prisma.processSession.findFirst({
       where: { stageId: stage.id, endedAt: null },
       orderBy: { startedAt: 'desc' },
@@ -379,6 +399,10 @@ async function submitQc(req, res) {
     const stage = await ensureOwnedStage(req.params.id, req.user.id);
     if (!stage) return res.status(404).json({ message: 'Stage not found' });
 
+    // Upserted on (stageId, questionId), so re-submitting an answer to the
+    // same question always overwrites the previous one rather than piling
+    // up duplicate responses — an operator can correct a QC answer by
+    // simply submitting it again.
     const results = await prisma.$transaction(
       responses.map((r) =>
         prisma.qcResponse.upsert({
