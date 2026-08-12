@@ -341,6 +341,17 @@ export function Operations() {
               ))}
             </div>
           )}
+
+          {inspectedJob && (
+            <div className="mt-6 pt-6 border-t border-slate-200/70">
+              <JobDetailsModal
+                jobId={inspectedJob.id}
+                jobName={inspectedJob.name}
+                onClose={() => setInspectedJob(null)}
+                embedded
+              />
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/50 shadow-card p-6">
@@ -510,14 +521,6 @@ export function Operations() {
           onClose={() => setPreviewJob(null)}
           onSend={() => handleSendToErp(previewJob.id)}
           sending={sendingId === previewJob.id}
-        />
-      )}
-
-      {inspectedJob && (
-        <JobDetailsModal
-          jobId={inspectedJob.id}
-          jobName={inspectedJob.name}
-          onClose={() => setInspectedJob(null)}
         />
       )}
     </div>
