@@ -181,7 +181,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
             />
           </div>
-          <div>
+          {/*<div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Est. Duration (min)</label>
             <input
               type="number"
@@ -190,7 +190,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
               onChange={(e) => setForm({ ...form, estimatedDurationMinutes: Number(e.target.value) })}
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
             />
-          </div>
+          </div>*/}
         </div>
       </div>
 
@@ -281,7 +281,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
                 onChange={(e) => { const arr = [...form.quantityMetrics]; arr[i] = { ...arr[i], unitLabel: e.target.value }; setForm({ ...form, quantityMetrics: arr }); }}
                 placeholder="Unit" className="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
               />
-              <input
+              {/*<input
                 type="number" value={m.minValue ?? ''}
                 onChange={(e) => { const arr = [...form.quantityMetrics]; arr[i] = { ...arr[i], minValue: e.target.value === '' ? null : Number(e.target.value) }; setForm({ ...form, quantityMetrics: arr }); }}
                 placeholder="Min" className="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
@@ -290,7 +290,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
                 type="number" value={m.maxValue ?? ''}
                 onChange={(e) => { const arr = [...form.quantityMetrics]; arr[i] = { ...arr[i], maxValue: e.target.value === '' ? null : Number(e.target.value) }; setForm({ ...form, quantityMetrics: arr }); }}
                 placeholder="Max" className="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-              />
+              />*/}
               <select
                 value={m.inputFrequency}
                 onChange={(e) => { const arr = [...form.quantityMetrics]; arr[i] = { ...arr[i], inputFrequency: e.target.value as any }; setForm({ ...form, quantityMetrics: arr }); }}
@@ -316,7 +316,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
       </TogglePanel>
 
       <TogglePanel
-        title="QC Form" description="Quality control questions for this stage"
+        title="Quality Control Form" description="Quality control questions for this stage"
         icon={<ClipboardCheck size={18} />} enabled={form.qcFormEnabled}
         onToggle={(v) => setForm({ ...form, qcFormEnabled: v })}
       >
@@ -335,8 +335,8 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
                   className="px-2 py-2 bg-white border border-slate-200 rounded-lg text-xs"
                 >
                   <option value="pass_fail">Pass/Fail</option>
-                  <option value="numeric">Numeric</option>
-                  <option value="free_text">Free Text</option>
+                  {/*<option value="numeric">Numeric</option>
+                  <option value="free_text">Free Text</option>*/}
                 </select>
                 <button type="button" onClick={() => setForm({ ...form, qcQuestions: form.qcQuestions.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-danger-600">
                   <Trash2 size={16} />

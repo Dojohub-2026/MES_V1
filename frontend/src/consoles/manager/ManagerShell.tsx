@@ -70,6 +70,7 @@ export function ManagerShell() {
             <div>
               <h1 className="text-sm font-bold text-white leading-tight">Dojo Hub Uganda</h1>
               <p className="text-xs text-slate-400 leading-tight">Manager Console</p>
+              <p className="text-xs text-slate-400 leading-tight">{user?.name}</p>
             </div>
           </div>
         </div>
@@ -116,12 +117,7 @@ export function ManagerShell() {
               <span className="text-sm tracking-wide">EMERGENCY STOP</span>
             </button>
 
-            <button className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-              <Bell size={20} strokeWidth={2.5} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-danger-500 rounded-full" />
-            </button>
-
-            <button className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+            {/*<button className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
               <div className="w-8 h-8 rounded-full bg-navy-600 flex items-center justify-center flex-shrink-0">
                 <User size={16} className="text-white" />
               </div>
@@ -130,7 +126,7 @@ export function ManagerShell() {
                 <p className="text-xs text-slate-500 leading-tight">Manager</p>
               </div>
               <ChevronDown size={16} className="text-slate-400" />
-            </button>
+            </button>*/}
           </div>
         </header>
 
