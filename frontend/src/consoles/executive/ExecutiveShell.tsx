@@ -5,7 +5,7 @@ import {
   Layers,
   Briefcase,
   BarChart3,
-  Bell,
+  //Bell,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -82,10 +82,10 @@ export function ExecutiveShell() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            {/*<button className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
               <Bell size={20} strokeWidth={2.5} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-danger-500 rounded-full" />
-            </button>
+            </button>*/}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success-100 border border-success-200">
               <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
               <span className="text-sm font-semibold text-success-700">System Online</span>
