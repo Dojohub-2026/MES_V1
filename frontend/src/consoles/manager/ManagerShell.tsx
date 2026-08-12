@@ -6,11 +6,11 @@ import {
   Wrench,
   Users,
   AlertTriangle,
-  Bell,
+  //Bell,
   LogOut,
   AlertOctagon,
-  User,
-  ChevronDown,
+  //User,
+  //ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../shared/lib/api';
