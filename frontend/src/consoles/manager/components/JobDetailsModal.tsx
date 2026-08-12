@@ -141,6 +141,7 @@ interface JobDetailsModalProps {
   jobId: string;
   jobName: string;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 const STATUS_STYLE: Record<JobStatus, string> = {
@@ -190,7 +191,7 @@ function formatDateTime(value: string | null): string {
   return new Date(value).toLocaleString();
 }
 
-export function JobDetailsModal({ jobId, jobName, onClose }: JobDetailsModalProps) {
+export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: JobDetailsModalProps) {
   const [job, setJob] = useState<JobDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -214,12 +215,15 @@ export function JobDetailsModal({ jobId, jobName, onClose }: JobDetailsModalProp
     };
   }, [jobId]);
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-
-      <div className="relative w-full max-w-5xl bg-white rounded-card shadow-2xl overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
-        <div className="px-6 py-4 bg-navy-950 flex-shrink-0">
+  const shell = (
+    <div
+      className={
+        embedded
+          ? 'w-full bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden flex flex-col'
+          : 'relative w-full max-w-5xl bg-white rounded-card shadow-2xl overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col'
+      }
+    >
+      <div className="px-6 py-4 bg-navy-950 flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Live Job Review</p>
@@ -237,7 +241,7 @@ export function JobDetailsModal({ jobId, jobName, onClose }: JobDetailsModalProp
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className={embedded ? 'p-6 space-y-6' : 'flex-1 overflow-y-auto p-6 space-y-6'}>
           {error && (
             <div className="flex items-center gap-3 p-4 rounded-xl bg-danger-50 border border-danger-200 text-danger-700 text-sm">
               <AlertTriangle size={18} strokeWidth={2.5} />
@@ -517,12 +521,22 @@ export function JobDetailsModal({ jobId, jobName, onClose }: JobDetailsModalProp
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-200 flex-shrink-0 flex justify-end">
+      <div className="px-6 py-4 border-t border-slate-200 flex-shrink-0 flex justify-end">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
             Close
           </button>
         </div>
-      </div>
+    </div>
+  );
+
+  if (embedded) {
+    return shell;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      {shell}
     </div>
   );
 }
