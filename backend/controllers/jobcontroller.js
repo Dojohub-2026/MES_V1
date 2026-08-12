@@ -121,9 +121,52 @@ async function getJob(req, res) {
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
       include: {
-        line: { select: { id: true, name: true, managerId: true } },
-        stages: { orderBy: { stageOrder: 'asc' }, include: { operator: { select: { id: true, name: true } } } },
+        line: {
+          select: {
+            id: true,
+            lineCode: true,
+            name: true,
+            description: true,
+            isActive: true,
+            targetProduct: true,
+            targetQuantity: true,
+            unit: true,
+            managerId: true,
+            manager: { select: { id: true, name: true, identifier: true } },
+          },
+        },
+        stages: {
+          orderBy: { stageOrder: 'asc' },
+          include: {
+            operator: { select: { id: true, name: true, identifier: true } },
+            blueprint: { select: { id: true, name: true, category: true, skillCategory: true, stationTag: true } },
+            faults: {
+              orderBy: { loggedAt: 'desc' },
+              include: { operator: { select: { id: true, name: true } } },
+            },
+            scrapLogs: { orderBy: { loggedAt: 'desc' } },
+            qcResponses: {
+              orderBy: { loggedAt: 'desc' },
+              include: { question: { select: { id: true, questionText: true, responseType: true } } },
+            },
+          },
+        },
         materialRequirements: { orderBy: { sortOrder: 'asc' } },
+        downtimeLogs: {
+          orderBy: { startedAt: 'desc' },
+          include: { stage: { select: { id: true, stageName: true, stageOrder: true } } },
+        },
+        scrapLogs: {
+          orderBy: { loggedAt: 'desc' },
+          include: { stage: { select: { id: true, stageName: true, stageOrder: true } } },
+        },
+        faults: {
+          orderBy: { loggedAt: 'desc' },
+          include: {
+            operator: { select: { id: true, name: true } },
+            stage: { select: { id: true, stageName: true, stageOrder: true } },
+          },
+        },
       },
     });
 
