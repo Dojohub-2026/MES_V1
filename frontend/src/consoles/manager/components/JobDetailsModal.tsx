@@ -219,7 +219,7 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
     <div
       className={
         embedded
-          ? 'w-full bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden flex flex-col'
+          ? 'w-full bg-slate-50 rounded-2xl border border-slate-200 shadow-card overflow-hidden flex flex-col'
           : 'relative w-full max-w-5xl bg-white rounded-card shadow-2xl overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col'
       }
     >
@@ -250,8 +250,20 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
           )}
 
           {!job && !error && (
-            <div className="flex items-center justify-center py-20 text-slate-400">
-              <Loader2 size={28} className="animate-spin" strokeWidth={2.5} />
+            <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center gap-3 text-slate-500">
+                <Loader2 size={20} className="animate-spin" strokeWidth={2.5} />
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Loading job details</p>
+                  <p className="text-xs text-slate-500">Fetching the full record for {jobName}.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="h-16 rounded-xl border border-slate-200 bg-slate-100 animate-pulse" />
+                ))}
+              </div>
             </div>
           )}
 
