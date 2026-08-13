@@ -116,70 +116,6 @@ async function canManagerAccessJob(job, managerId) {
   return job.line?.managerId === managerId;
 }
 
-async function getJob(req, res) {
-  try {
-    const job = await prisma.job.findUnique({
-      where: { id: req.params.id },
-      include: {
-        line: {
-          select: {
-            id: true,
-            lineCode: true,
-            name: true,
-            description: true,
-            isActive: true,
-            targetProduct: true,
-            targetQuantity: true,
-            unit: true,
-            managerId: true,
-            manager: { select: { id: true, name: true, identifier: true } },
-          },
-        },
-        stages: {
-          orderBy: { stageOrder: 'asc' },
-          include: {
-            operator: { select: { id: true, name: true, identifier: true } },
-            blueprint: { select: { id: true, name: true, category: true, skillCategory: true, stationTag: true } },
-            faults: {
-              orderBy: { loggedAt: 'desc' },
-              include: { operator: { select: { id: true, name: true } } },
-            },
-            scrapLogs: { orderBy: { loggedAt: 'desc' } },
-            qcResponses: {
-              orderBy: { loggedAt: 'desc' },
-              include: { question: { select: { id: true, questionText: true, responseType: true } } },
-            },
-          },
-        },
-        materialRequirements: { orderBy: { sortOrder: 'asc' } },
-        downtimeLogs: {
-          orderBy: { startedAt: 'desc' },
-          include: { stage: { select: { id: true, stageName: true, stageOrder: true } } },
-        },
-        scrapLogs: {
-          orderBy: { loggedAt: 'desc' },
-          include: { stage: { select: { id: true, stageName: true, stageOrder: true } } },
-        },
-        faults: {
-          orderBy: { loggedAt: 'desc' },
-          include: {
-            operator: { select: { id: true, name: true } },
-            stage: { select: { id: true, stageName: true, stageOrder: true } },
-          },
-        },
-      },
-    });
-
-    if (!job || !(await canManagerAccessJob(job, req.user.id))) {
-      return res.status(404).json({ message: 'Job not found' });
-    }
-
-    return res.status(200).json(job);
-  } catch (error) {
-    return res.status(500).json({ message: 'Failed to load job', error: error.message });
-  }
-}
-
 async function previewErpData(req, res) {
   try {
     const job = await prisma.job.findUnique({
@@ -377,4 +313,4 @@ async function logScrap(req, res) {
   }
 }
 
-module.exports = { createJob, getJob, updateJob, logDowntime, logScrap, sendToErp, previewErpData };
+module.exports = { createJob, updateJob, logDowntime, logScrap, sendToErp, previewErpData };
