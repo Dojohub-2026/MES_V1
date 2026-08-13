@@ -31,40 +31,6 @@ router.post('/', jobController.createJob);
 /**
  * @swagger
  * /manager/jobs/{id}:
- *   get:
- *     summary: Get a job with its stages, material requirements, and logs
- *     tags: [Manager - Jobs]
- *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     responses:
- *       200:
- *         description: Job detail
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Job'
- *                 - type: object
- *                   properties:
- *                     stages:
- *                       type: array
- *                       items: { $ref: '#/components/schemas/JobStage' }
- *                     materialRequirements:
- *                       type: array
- *                       items: { $ref: '#/components/schemas/JobMaterialRequirement' }
- *       401: { $ref: '#/components/responses/UnauthorizedError' }
- *       403: { $ref: '#/components/responses/ForbiddenError' }
- *       404: { $ref: '#/components/responses/NotFoundError' }
- */
-router.get('/:id', jobController.getJob);
-
-/**
- * @swagger
- * /manager/jobs/{id}:
  *   put:
  *     summary: Update a job's details
  *     tags: [Manager - Jobs]
