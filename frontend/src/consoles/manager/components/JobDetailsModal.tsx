@@ -335,7 +335,7 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
                         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
                           <div>
                             <p className="text-sm font-semibold text-slate-900">
-                              #{stage.stageOrder} {stage.stageName}
+                              #{stage.stageOrder + 1} {stage.stageName}
                             </p>
                             <p className="text-xs text-slate-400">
                               {stage.blueprint ? `${stage.blueprint.category} blueprint` : 'Ad hoc stage'}
