@@ -16,6 +16,7 @@ import {
 import { api } from '../../../shared/lib/api';
 import { connectSocket } from '../../../shared/lib/socket';
 import { ProductionDataPreviewModal } from '../components/ProductionDataPreviewModal';
+import { JobDetailsModal } from '../components/JobDetailsModal';
 
 interface AssignedLine {
   id: string;
@@ -141,6 +142,7 @@ export function Operations() {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendResult, setSendResult] = useState<Record<string, { ok: boolean; message: string } | undefined>>({});
   const [previewJob, setPreviewJob] = useState<{ id: string; name: string } | null>(null);
+  const [inspectedJob, setInspectedJob] = useState<{ id: string; name: string } | null>(null);
 
   // Draft jobs include ones with no line yet (e.g. an unmatched ERP work
   // order) — the backend shows those to every manager. Active/completed
@@ -295,8 +297,10 @@ export function Operations() {
           ) : (
             <div className="space-y-4">
               {jobs.map((job) => (
-                <div
+                <button
                   key={job.id}
+                  type='button'
+                  onClick={() => setInspectedJob({ id: job.id, name: job.name })}
                   className="w-full text-left border border-slate-200 rounded-xl overflow-hidden hover:border-navy-300 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-navy-500/20"
                 >
                   <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
@@ -330,8 +334,21 @@ export function Operations() {
                       </div>
                     ))
                   )}
-                </div>
+                  <div className="px-4 py-2 bg-white border-t border-slate-100 text-[11px] font-medium text-navy-600">
+                    Click to inspect the full job record
+                  </div>
+                </button>
               ))}
+              {inspectedJob && (
+                <div className="mt-6 pt-6 border-t border-slate-200/70">
+                  <JobDetailsModal
+                    jobId={inspectedJob.id}
+                    jobName={inspectedJob.name}
+                    onClose={() => setInspectedJob(null)}
+                    embedded
+                  />
+                </div>
+              )}
             </div>
           )}
 
