@@ -121,7 +121,7 @@ model BlueprintFaultCategory {
   id          String        @id @default(uuid())
   blueprintId String
   faultName   String
-  severity    FaultSeverity
+  // severity    FaultSeverity
   sortOrder   Int           @default(0)
   createdAt   DateTime      @default(now())
   blueprint   Blueprint     @relation(fields: [blueprintId], references: [id], onDelete: Cascade)

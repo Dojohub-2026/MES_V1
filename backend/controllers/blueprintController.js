@@ -39,7 +39,6 @@ function buildNestedCreates(body) {
     faultCategories: {
       create: (body.faultCategories || []).map((f, i) => ({
         faultName: f.faultName,
-        severity: f.severity,
         sortOrder: i,
       })),
     },

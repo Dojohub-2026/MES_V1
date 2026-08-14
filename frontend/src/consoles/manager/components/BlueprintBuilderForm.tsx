@@ -8,7 +8,7 @@ import { api } from '../../../shared/lib/api';
 interface ChecklistItemForm { itemText: string; isRequired: boolean; }
 interface QuantityMetricForm { metricName: string; unitLabel: string; minValue: number | null; maxValue: number | null; inputFrequency: 'ONCE' | 'PER_BATCH' | 'HOURLY'; }
 interface QcQuestionForm { questionText: string; responseType: 'pass_fail' | 'numeric' | 'free_text'; numericMinValue: number | null; numericMaxValue: number | null; isRequired: boolean; }
-interface FaultCategoryForm { faultName: string; severity: 'CRITICAL' | 'MINOR'; }
+interface FaultCategoryForm { faultName: string; }
 
 interface FormState {
   name: string;
@@ -97,7 +97,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
           qcFormEnabled: bp.qcFormEnabled,
           qcQuestions: bp.qcQuestions.map((q: any) => ({ questionText: q.questionText, responseType: q.responseType, numericMinValue: q.numericMinValue, numericMaxValue: q.numericMaxValue, isRequired: q.isRequired })),
           faultCategoriesEnabled: bp.faultCategoriesEnabled,
-          faultCategories: bp.faultCategories.map((f: any) => ({ faultName: f.faultName, severity: f.severity })),
+          faultCategories: bp.faultCategories.map((f: any) => ({ faultName: f.faultName})),
         });
       })
       .catch((err) => setError(err?.response?.data?.message || 'Failed to load blueprint.'))
@@ -381,14 +381,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
                 onChange={(e) => { const arr = [...form.faultCategories]; arr[i] = { ...arr[i], faultName: e.target.value }; setForm({ ...form, faultCategories: arr }); }}
                 placeholder="Fault name" className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
               />
-              <select
-                value={f.severity}
-                onChange={(e) => { const arr = [...form.faultCategories]; arr[i] = { ...arr[i], severity: e.target.value as any }; setForm({ ...form, faultCategories: arr }); }}
-                className="px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-              >
-                <option value="MINOR">Minor</option>
-                <option value="CRITICAL">Critical</option>
-              </select>
+              
               <button type="button" onClick={() => setForm({ ...form, faultCategories: form.faultCategories.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-danger-600">
                 <Trash2 size={16} />
               </button>
@@ -396,7 +389,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
           ))}
           <button
             type="button"
-            onClick={() => setForm({ ...form, faultCategories: [...form.faultCategories, { faultName: '', severity: 'MINOR' }] })}
+            onClick={() => setForm({ ...form, faultCategories: [...form.faultCategories, { faultName: '' }] })}
             className="flex items-center gap-1.5 text-sm font-medium text-navy-600 hover:text-navy-700"
           >
             <Plus size={16} /> Add Fault Category
