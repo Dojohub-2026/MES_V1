@@ -18,19 +18,21 @@ export function IssueLogger({ faultCategories, stageName, jobId, jobName, produc
   const options = [...faultCategories, OTHER_FAULT_CATEGORY];
   const [selectedId, setSelectedId] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [severity, setSeverity] = useState<'CRITICAL' | 'MINOR' | null>(null);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selected = options.find((f) => f.id === selectedId) || null;
-  const isCritical = selected?.severity === 'CRITICAL';
+  const isCritical = severity === 'CRITICAL';
+  const canSubmit = !!selected && !!severity;
 
   const handleSubmit = async () => {
-    if (!selected) return;
+    if (!selected || !severity) return;
     setIsSubmitting(true);
     try {
       await onSubmit({
         faultName: selected.faultName,
-        severity: selected.severity,
+        severity,
         notes: notes.trim() || '(No additional notes)',
       });
     } finally {
@@ -105,22 +107,15 @@ export function IssueLogger({ faultCategories, stageName, jobId, jobName, produc
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-100 last:border-0"
                   >
-                    <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        fault.severity === 'CRITICAL' ? 'bg-danger-100' : 'bg-warning-100'
-                      }`}
-                    >
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-100">
                       <AlertTriangle
                         size={18}
-                        className={fault.severity === 'CRITICAL' ? 'text-danger-600' : 'text-warning-600'}
+                        className="text-slate-500"
                         strokeWidth={2.5}
                       />
                     </div>
                     <div className="flex-1">
                       <p className="text-base font-semibold text-slate-900">{fault.faultName}</p>
-                      <p className="text-sm text-slate-500">
-                        {fault.severity === 'CRITICAL' ? 'Critical severity' : 'Minor severity'}
-                      </p>
                     </div>
                     {selectedId === fault.id && <Check size={20} className="text-navy-600" strokeWidth={2.5} />}
                   </button>
@@ -131,23 +126,38 @@ export function IssueLogger({ faultCategories, stageName, jobId, jobName, produc
         </div>
 
         {selected && (
-          <div className={`rounded-2xl p-5 border-2 ${isCritical ? 'bg-danger-50 border-danger-300' : 'bg-warning-50 border-warning-300'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isCritical ? 'bg-danger-500' : 'bg-warning-500'}`}>
-                <AlertTriangle size={26} className="text-white" strokeWidth={2.5} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-600">Severity Tier</p>
-                <p className={`text-xl font-bold tracking-wide ${isCritical ? 'text-danger-700' : 'text-warning-700'}`}>
-                  {isCritical ? 'CRITICAL' : 'MINOR'}
+          <div>
+            <label className="block text-base font-bold text-slate-800 mb-2">Severity</label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSeverity('MINOR')}
+                className={`flex-1 py-4 rounded-2xl border-2 font-bold text-base transition-all flex items-center justify-center gap-2 ${
+                  severity === 'MINOR' ? 'bg-warning-500 border-warning-500 text-white' : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                <AlertTriangle size={20} strokeWidth={2.5} />
+                MINOR
+              </button>
+              <button
+                onClick={() => setSeverity('CRITICAL')}
+                className={`flex-1 py-4 rounded-2xl border-2 font-bold text-base transition-all flex items-center justify-center gap-2 ${
+                  severity === 'CRITICAL' ? 'bg-danger-500 border-danger-500 text-white' : 'bg-white border-slate-200 text-slate-600'
+                }`}
+              >
+                <AlertTriangle size={20} strokeWidth={2.5} />
+                CRITICAL
+              </button>
+            </div>
+
+            {severity && (
+              <div className={`rounded-2xl p-4 mt-3 border-2 ${isCritical ? 'bg-danger-50 border-danger-300' : 'bg-warning-50 border-warning-300'}`}>
+                <p className={`text-sm ${isCritical ? 'text-danger-600' : 'text-warning-600'}`}>
+                  {isCritical
+                    ? 'This issue requires immediate manager attention. Production may need to halt.'
+                    : 'This issue should be logged and monitored. Production can continue normally.'}
                 </p>
               </div>
-            </div>
-            <p className={`text-sm mt-3 ${isCritical ? 'text-danger-600' : 'text-warning-600'}`}>
-              {isCritical
-                ? 'This issue requires immediate manager attention. Production may need to halt.'
-                : 'This issue should be logged and monitored. Production can continue normally.'}
-            </p>
+            )}
           </div>
         )}
 
@@ -172,9 +182,9 @@ export function IssueLogger({ faultCategories, stageName, jobId, jobName, produc
         ) : (
           <button
             onClick={handleSubmit}
-            disabled={!selected}
+            disabled={!canSubmit}
             className={`w-full py-5 rounded-2xl text-lg font-bold tracking-wide transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
-              selected ? 'bg-navy-900 text-white shadow-lg active:bg-navy-800' : 'bg-slate-200 text-slate-400'
+              canSubmit ? 'bg-navy-900 text-white shadow-lg active:bg-navy-800' : 'bg-slate-200 text-slate-400'
             }`}
           >
             Submit Issue to Control Dashboard

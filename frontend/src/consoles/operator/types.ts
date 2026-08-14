@@ -62,7 +62,7 @@ export interface QcResponseRecord {
 export interface FaultCategory {
   id: string;
   faultName: string;
-  severity: FaultSeverity;
+  sortOrder: number;
 }
 
 export interface StageDetail {
@@ -106,7 +106,7 @@ export interface BatchEntry {
 export const OTHER_FAULT_CATEGORY: FaultCategory = {
   id: '__other__',
   faultName: 'Other / Unspecified Issue',
-  severity: 'MINOR',
+  sortOrder: 9999,
 };
 
 export const INTERRUPTION_REASONS = [
