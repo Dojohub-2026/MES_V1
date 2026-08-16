@@ -683,7 +683,9 @@ export function HistoricalAnalytics() {
     if (!data) return;
 
     const doc = new jsPDF({ orientation: 'landscape' });
-    const nextY = () => (doc as any).lastAutoTable?.finalY ?? 14;
+    // Starts below the title + range lines drawn just under, so the first
+    // section header doesn't land on the same baseline as "Range: ...".
+    const nextY = () => (doc as any).lastAutoTable?.finalY ?? 26;
 
     doc.setFontSize(16);
     doc.text('Production Analytics Report', 14, 14);
