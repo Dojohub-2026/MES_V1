@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Factory,
@@ -143,6 +143,17 @@ export function Operations() {
   const [sendResult, setSendResult] = useState<Record<string, { ok: boolean; message: string } | undefined>>({});
   const [previewJob, setPreviewJob] = useState<{ id: string; name: string } | null>(null);
   const [inspectedJob, setInspectedJob] = useState<{ id: string; name: string } | null>(null);
+  const inspectedPanelRef = useRef<HTMLDivElement>(null);
+
+  // The inspect panel renders below the entire job list, so with more than
+  // one active job it opens off-screen with no visible change at the click
+  // point. Scroll it into view as soon as it mounts so it's obvious the
+  // click registered.
+  useEffect(() => {
+    if (inspectedJob) {
+      inspectedPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [inspectedJob]);
 
   // Draft jobs include ones with no line yet (e.g. an unmatched ERP work
   // order) — the backend shows those to every manager. Active/completed
@@ -340,7 +351,7 @@ export function Operations() {
                 </button>
               ))}
               {inspectedJob && (
-                <div className="mt-6 pt-6 border-t border-slate-200/70">
+                <div ref={inspectedPanelRef} className="mt-6 pt-6 border-t border-slate-200/70 scroll-mt-6">
                   <JobDetailsModal
                     jobId={inspectedJob.id}
                     jobName={inspectedJob.name}

@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { api } from '../../../shared/lib/api';
 import { connectSocket } from '../../../shared/lib/socket';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 type Tab = 'timelines' | 'downtime' | 'scrap' | 'operators';
 
@@ -98,6 +100,7 @@ interface OperatorActivityRow {
   tasksCompleted: number;
   avgActualDurationMinutes: number | null;
   faultsLogged: number;
+  lastActiveAt: string | null;
 }
 
 interface AnalyticsData {
@@ -550,6 +553,7 @@ function OperatorActivityTab({ data }: { data: OperatorActivityRow[] }) {
                 <th className="text-center px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tasks Completed</th>
                 <th className="text-center px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Avg. Actual Duration</th>
                 <th className="text-center px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Faults Logged</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Last Active</th>
               </tr>
             </thead>
             <tbody>
@@ -567,6 +571,7 @@ function OperatorActivityTab({ data }: { data: OperatorActivityRow[] }) {
                   <td className="px-6 py-4 text-center text-sm text-slate-700">{row.tasksCompleted}</td>
                   <td className="px-6 py-4 text-center text-sm text-slate-700">{row.avgActualDurationMinutes != null ? `${row.avgActualDurationMinutes} min` : '—'}</td>
                   <td className="px-6 py-4 text-center text-sm font-semibold text-slate-800">{row.faultsLogged}</td>
+                  <td className="px-6 py-4 text-right text-sm text-slate-500">{row.lastActiveAt ? new Date(row.lastActiveAt).toLocaleString() : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -674,6 +679,92 @@ export function HistoricalAnalytics() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPdf = () => {
+    if (!data) return;
+
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const nextY = () => (doc as any).lastAutoTable?.finalY ?? 14;
+
+    doc.setFontSize(16);
+    doc.text('Production Analytics Report', 14, 14);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Range: ${startDate} to ${endDate}`, 14, 20);
+
+    const section = (title: string, head: string[], body: (string | number)[][]) => {
+      if (body.length === 0) return;
+      const startY = nextY() + 10;
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text(title, 14, startY - 4);
+      autoTable(doc, {
+        head: [head],
+        body,
+        startY,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [15, 23, 42] },
+        margin: { left: 14, right: 14 },
+      });
+    };
+
+    section(
+      'Job History',
+      ['Job', 'Line', 'Date', 'Target', 'Status'],
+      data.jobHistory.map((j) => [
+        `${j.jobId} — ${j.name}`,
+        j.lineName,
+        j.scheduledStartAt ? new Date(j.scheduledStartAt).toLocaleString() : '',
+        `${j.targetQuantity} ${j.unit}`,
+        j.status,
+      ])
+    );
+
+    section(
+      'Faults',
+      ['Job', 'Line', 'Logged At', 'Severity', 'Title'],
+      data.faultRecords.map((f) => [f.jobId || '', f.lineName || '', new Date(f.loggedAt).toLocaleString(), f.severity, f.title])
+    );
+
+    section(
+      'Downtime',
+      ['Job', 'Line', 'Started At', 'Duration', 'Reason'],
+      data.downtimeRecords.map((d) => [
+        d.jobId || '',
+        d.lineName || '',
+        new Date(d.startedAt).toLocaleString(),
+        d.durationMinutes != null ? `${d.durationMinutes} min` : '',
+        d.reason,
+      ])
+    );
+
+    section(
+      'Scrap',
+      ['Job', 'Line', 'Logged At', 'Quantity', 'Waste Type'],
+      data.scrapRecords.map((s) => [s.jobId || '', s.lineName || '', new Date(s.loggedAt).toLocaleString(), `${s.quantity} ${s.unit}`, s.wasteType])
+    );
+
+    section(
+      'Batch Logs',
+      ['Job', 'Line', 'Logged At', 'Batch #', 'Stage'],
+      data.batchLogs.map((b) => [b.jobId || '', b.lineName || '', new Date(b.loggedAt).toLocaleString(), b.batchNumber, b.stageName || ''])
+    );
+
+    section(
+      'Operator Activity',
+      ['Operator', 'Tasks Assigned', 'Tasks Completed', 'Avg. Actual Duration', 'Faults Logged', 'Last Active'],
+      data.operatorActivity.map((row) => [
+        row.operatorName,
+        row.tasksAssigned,
+        row.tasksCompleted,
+        row.avgActualDurationMinutes != null ? `${row.avgActualDurationMinutes} min` : '—',
+        row.faultsLogged,
+        row.lastActiveAt ? new Date(row.lastActiveAt).toLocaleString() : '—',
+      ])
+    );
+
+    doc.save(`production-analytics-${startDate}-to-${endDate}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -695,14 +786,24 @@ export function HistoricalAnalytics() {
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm text-slate-700 bg-transparent outline-none" />
           </div>
         </div>
-        <button
-          onClick={handleExport}
-          disabled={loading || !data}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy-900 hover:bg-navy-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold transition-all active:scale-[0.98]"
-        >
-          <Download size={18} strokeWidth={2.5} />
-          Export to CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={loading || !data}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy-900 hover:bg-navy-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold transition-all active:scale-[0.98]"
+          >
+            <Download size={18} strokeWidth={2.5} />
+            Export to CSV
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={loading || !data}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-navy-900 hover:bg-navy-50 disabled:bg-slate-100 disabled:border-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed text-navy-900 text-sm font-bold transition-all active:scale-[0.98]"
+          >
+            <Download size={18} strokeWidth={2.5} />
+            Export to PDF
+          </button>
+        </div>
       </div>
 
       <div className="border-b border-slate-200">
