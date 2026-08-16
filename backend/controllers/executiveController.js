@@ -289,6 +289,7 @@ async function getAnalytics(req, res) {
           tasksCompleted: 0,
           totalActualMinutes: 0,
           completedWithDuration: 0,
+          lastActiveAt: null,
         };
       }
       byOperator[key].tasksAssigned += 1;
@@ -299,12 +300,23 @@ async function getAnalytics(req, res) {
         );
         byOperator[key].completedWithDuration += 1;
       }
+      // Last Active tracks the most recent thing this operator actually did —
+      // a stage ending (or starting, if it hasn't ended yet) or a fault being
+      // logged — whichever happened last within the selected range.
+      const stageActivityAt = s.actualEndedAt || s.actualStartedAt;
+      if (stageActivityAt && (!byOperator[key].lastActiveAt || stageActivityAt > byOperator[key].lastActiveAt)) {
+        byOperator[key].lastActiveAt = stageActivityAt;
+      }
     });
 
     const faultsByOperatorId = {};
     faults.forEach((f) => {
       if (!f.operator) return;
       faultsByOperatorId[f.operator.id] = (faultsByOperatorId[f.operator.id] || 0) + 1;
+      const row = byOperator[f.operator.id];
+      if (row && f.loggedAt && (!row.lastActiveAt || f.loggedAt > row.lastActiveAt)) {
+        row.lastActiveAt = f.loggedAt;
+      }
     });
 
     const operatorActivity = Object.entries(byOperator).map(([operatorId, row]) => ({
@@ -314,6 +326,7 @@ async function getAnalytics(req, res) {
       avgActualDurationMinutes:
         row.completedWithDuration > 0 ? Math.round(row.totalActualMinutes / row.completedWithDuration) : null,
       faultsLogged: faultsByOperatorId[operatorId] || 0,
+      lastActiveAt: row.lastActiveAt,
     }));
 
     return res.status(200).json({

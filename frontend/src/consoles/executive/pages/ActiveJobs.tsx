@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Briefcase, Package, User, Wrench, Clock, AlertTriangle, ChevronDown, ChevronUp,
   Loader2, CheckCircle2, PlayCircle, PauseCircle, FileEdit, XCircle,
 } from 'lucide-react';
 import { api } from '../../../shared/lib/api';
 import { formatDate } from '../../../shared/lib/formatters';
+import { connectSocket } from '../../../shared/lib/socket';
 
 interface JobStage {
   id: string;
@@ -180,11 +181,46 @@ export function ActiveJobs() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | Job['status']>('all');
 
-  useEffect(() => {
-    api.get<{ jobs: Job[] }>('/executive/jobs')
-      .then((res) => setJobs(res.data.jobs))
+  const loadJobs = useCallback(() => {
+    return api.get<{ jobs: Job[] }>('/executive/jobs')
+      .then((res) => {
+        setJobs(res.data.jobs);
+        setError(null);
+      })
       .catch((err) => setError(err?.response?.data?.message || 'Failed to load jobs.'));
   }, []);
+
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
+
+  // Live updates — this page previously only ever showed a snapshot from
+  // page load; it never refreshed on its own. Refetch silently in the
+  // background whenever something that changes a job's state happens on
+  // the floor, without flashing the loading state over data already on
+  // screen.
+  useEffect(() => {
+    const socket = connectSocket();
+    const refresh = () => {
+      loadJobs().catch(() => {});
+    };
+    socket.on('stage:updated', refresh);
+    socket.on('batch:logged', refresh);
+    socket.on('scrap:logged', refresh);
+    socket.on('fault:reported', refresh);
+    socket.on('fault:resolved', refresh);
+    socket.on('emergency:triggered', refresh);
+    socket.on('emergency:resumed', refresh);
+    return () => {
+      socket.off('stage:updated', refresh);
+      socket.off('batch:logged', refresh);
+      socket.off('scrap:logged', refresh);
+      socket.off('fault:reported', refresh);
+      socket.off('fault:resolved', refresh);
+      socket.off('emergency:triggered', refresh);
+      socket.off('emergency:resumed', refresh);
+    };
+  }, [loadJobs]);
 
   if (error) {
     return (

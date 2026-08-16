@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
   CalendarClock,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../shared/lib/api';
 import { formatDate, formatRelativeTime } from '../../../shared/lib/formatters';
+import { connectSocket } from '../../../shared/lib/socket';
 
 type JobStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 
@@ -195,25 +196,53 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
   const [job, setJob] = useState<JobDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const loadJob = useCallback(
+    (showLoading: boolean) => {
+      if (showLoading) setJob(null);
+      return api
+        .get<JobDetails>(`/manager/jobs/${jobId}`)
+        .then((res) => {
+          setJob(res.data);
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err?.response?.data?.message || 'Failed to load job details.');
+        });
+    },
+    [jobId]
+  );
+
   useEffect(() => {
-    let cancelled = false;
-
-    setJob(null);
     setError(null);
+    loadJob(true);
+  }, [loadJob]);
 
-    api
-      .get<JobDetails>(`/manager/jobs/${jobId}`)
-      .then((res) => {
-        if (!cancelled) setJob(res.data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err?.response?.data?.message || 'Failed to load job details.');
-      });
-
-    return () => {
-      cancelled = true;
+  // This panel used to load once on open and then sit frozen — a stage
+  // completing, a batch being logged, or a fault firing while it was open
+  // never reflected here until it was closed and reopened. Refetch quietly
+  // in the background on the same events the rest of the app listens for.
+  useEffect(() => {
+    const socket = connectSocket();
+    const refresh = () => {
+      loadJob(false).catch(() => {});
     };
-  }, [jobId]);
+    socket.on('stage:updated', refresh);
+    socket.on('batch:logged', refresh);
+    socket.on('scrap:logged', refresh);
+    socket.on('fault:reported', refresh);
+    socket.on('fault:resolved', refresh);
+    socket.on('emergency:triggered', refresh);
+    socket.on('emergency:resumed', refresh);
+    return () => {
+      socket.off('stage:updated', refresh);
+      socket.off('batch:logged', refresh);
+      socket.off('scrap:logged', refresh);
+      socket.off('fault:reported', refresh);
+      socket.off('fault:resolved', refresh);
+      socket.off('emergency:triggered', refresh);
+      socket.off('emergency:resumed', refresh);
+    };
+  }, [loadJob]);
 
   const shell = (
     <div

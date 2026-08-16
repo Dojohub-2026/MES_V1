@@ -181,7 +181,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
             />
           </div>
-          {/*<div>
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Est. Duration (min)</label>
             <input
               type="number"
@@ -190,7 +190,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
               onChange={(e) => setForm({ ...form, estimatedDurationMinutes: Number(e.target.value) })}
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
             />
-          </div>*/}
+          </div>
         </div>
       </div>
 
