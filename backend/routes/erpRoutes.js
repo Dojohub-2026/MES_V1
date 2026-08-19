@@ -50,7 +50,6 @@ router.use(authenticateToken, requireRole('ERP'));
  *                     order: { type: integer }
  *                     station: { type: string, nullable: true }
  *                     instruction: { type: string }
- *                     requires_qc: { type: boolean }
  *                     expected_duration_min: { type: integer }
  *     responses:
  *       201:

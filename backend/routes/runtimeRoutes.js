@@ -29,7 +29,7 @@ router.get('/assignments', runtimeController.getAssignments);
  * @swagger
  * /operator/stages/{id}:
  *   get:
- *     summary: "O2 — Full stage detail (guidelines, checklist, quantity, QC)"
+ *     summary: "O2 — Full stage detail (guidelines, checklist, quantity)"
  *     tags: [Operator Runtime]
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -144,7 +144,7 @@ router.post('/stages/:id/resume', runtimeController.resumeStage);
  * @swagger
  * /operator/stages/{id}/complete:
  *   post:
- *     summary: "O2 — Complete a stage (closes the ProcessSession), enforcing required checklist items"
+ *     summary: "O2 — Complete a stage (closes the ProcessSession)"
  *     tags: [Operator Runtime]
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -161,8 +161,8 @@ router.post('/stages/:id/resume', runtimeController.resumeStage);
  *       401: { $ref: '#/components/responses/UnauthorizedError' }
  *       403: { $ref: '#/components/responses/ForbiddenError' }
  *       404: { $ref: '#/components/responses/NotFoundError' }
- *       422:
- *         description: Required checklist items are not yet complete
+ *       409:
+ *         description: Stage is not RUNNING or PAUSED
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -199,7 +199,7 @@ router.get('/stages/:id/quantity', runtimeController.getQuantityLogs);
  * @swagger
  * /operator/stages/{id}/quantity:
  *   post:
- *     summary: "O2 — Log a batch entry (Units Filled/Rejected etc.)"
+ *     summary: "O2 — Log a batch entry; if the blueprint's checklist is enabled, all required items must be checked for this batch"
  *     tags: [Operator Runtime]
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -213,12 +213,24 @@ router.get('/stages/:id/quantity', runtimeController.getQuantityLogs);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [quantityData]
+ *             required: [entries]
  *             properties:
- *               quantityData:
- *                 type: object
- *                 additionalProperties: { type: number }
- *                 example: { "Units Filled": 25, "Units Rejected": 18 }
+ *               entries:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     metricName: { type: string }
+ *                     value: { type: number }
+ *                 example: [{ "metricName": "Units Filled", "value": 25 }]
+ *               checklist:
+ *                 type: array
+ *                 description: Required when the blueprint's checklist is enabled — one entry per checklist item for this batch.
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     itemId: { type: string, format: uuid }
+ *                     checked: { type: boolean }
  *               notes: { type: string }
  *     responses:
  *       201:
@@ -226,51 +238,16 @@ router.get('/stages/:id/quantity', runtimeController.getQuantityLogs);
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/BatchEntry' }
- *       401: { $ref: '#/components/responses/UnauthorizedError' }
- *       403: { $ref: '#/components/responses/ForbiddenError' }
- *       404: { $ref: '#/components/responses/NotFoundError' }
- *       409:
- *         description: No active session for this stage
+ *       400:
+ *         description: Missing entries, or required checklist items not checked
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
- */
-router.post('/stages/:id/quantity', runtimeController.logQuantity);
-
-/**
- * @swagger
- * /operator/stages/{id}/qc:
- *   post:
- *     summary: "O2 — Submit a Quality Control response for this stage"
- *     tags: [Operator Runtime]
- *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [questionId]
- *             properties:
- *               questionId: { type: string, format: uuid, description: "BlueprintQcQuestion id" }
- *               responseText: { type: string }
- *               passed: { type: boolean, description: "Used for pass_fail question types" }
- *     responses:
- *       201:
- *         description: QC response recorded
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/QcResponse' }
  *       401: { $ref: '#/components/responses/UnauthorizedError' }
  *       403: { $ref: '#/components/responses/ForbiddenError' }
  *       404: { $ref: '#/components/responses/NotFoundError' }
  */
-router.post('/stages/:id/qc', runtimeController.submitQc);
+router.post('/stages/:id/quantity', runtimeController.logQuantity);
 
 /**
  * @swagger

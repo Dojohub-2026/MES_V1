@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X, Clock, MapPin, CalendarClock, ShieldCheck, AlertTriangle, ClipboardCheck, ArrowDown } from 'lucide-react';
+import { GripVertical, X, Clock, MapPin, CalendarClock, ShieldCheck, AlertTriangle, ArrowDown } from 'lucide-react';
 
 interface Operator {
   id: string;
@@ -13,7 +13,6 @@ export interface StageDraft {
   blueprintId: string | null;
   stageName: string;
   instruction?: string | null;
-  requiresQc?: boolean;
   skillCategory?: string | null;
   estimatedDurationMinutes: number;
   stationTag: string | null;
@@ -101,11 +100,6 @@ export function StageCard({ stage, index, allStages, isLast, operators, onAssign
                 <MapPin size={12} />
                 <span>{stage.stationTag}</span>
               </>
-            )}
-            {stage.requiresQc && (
-              <span className="flex items-center gap-1 text-info-700 bg-info-50 px-1.5 py-0.5 rounded">
-                <ClipboardCheck size={11} /> QC Required
-              </span>
             )}
           </div>
           {stage.estimatedDurationMinutes > 0 && (

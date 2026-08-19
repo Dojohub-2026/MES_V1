@@ -58,7 +58,6 @@ interface JobDetails {
     stageOrder: number;
     stageName: string;
     instruction: string | null;
-    requiresQc: boolean;
     estimatedDurationMinutes: number;
     stationTag: string | null;
     status: StageStatus;
@@ -69,13 +68,6 @@ interface JobDetails {
     scheduledEndAt: string | null;
     actualStartedAt: string | null;
     actualEndedAt: string | null;
-    qcResponses: Array<{
-      id: string;
-      loggedAt: string;
-      passed: boolean | null;
-      responseText: string | null;
-      question: { id: string; questionText: string; responseType: string };
-    }>;
     scrapLogs: Array<{
       id: string;
       quantity: number;
@@ -377,7 +369,6 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
                           <div className="space-y-2">
                             <InfoTile label="Operator" value={stage.operator?.name ?? 'Unassigned'} />
                             <InfoTile label="Duration" value={`${stage.estimatedDurationMinutes} min`} />
-                            <InfoTile label="Requires QC" value={stage.requiresQc ? 'Yes' : 'No'} />
                           </div>
                           <div className="space-y-2">
                             <InfoTile label="Scheduled Start" value={formatDateTime(stage.scheduledStartAt)} />
@@ -416,39 +407,22 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
                           </div>
 
                           <div className="p-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Stage Scrap & QC</p>
-                            <div className="space-y-3">
-                              {stage.scrapLogs.length === 0 ? (
-                                <EmptyState>No scrap logged for this stage.</EmptyState>
-                              ) : (
-                                <div className="space-y-2">
-                                  {stage.scrapLogs.map((scrap) => (
-                                    <div key={scrap.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-                                      <p className="font-semibold text-slate-900">{scrap.wasteType}</p>
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        {scrap.quantity} {scrap.unit}
-                                        {scrap.notes ? ` · ${scrap.notes}` : ''}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {stage.qcResponses.length === 0 ? (
-                                <EmptyState>No QC responses recorded for this stage.</EmptyState>
-                              ) : (
-                                <div className="space-y-2">
-                                  {stage.qcResponses.map((qc) => (
-                                    <div key={qc.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-                                      <p className="font-semibold text-slate-900">{qc.question.questionText}</p>
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        {qc.passed === null ? 'Not scored' : qc.passed ? 'Pass' : 'Fail'} · {qc.responseText ?? 'No response text'}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Stage Scrap</p>
+                            {stage.scrapLogs.length === 0 ? (
+                              <EmptyState>No scrap logged for this stage.</EmptyState>
+                            ) : (
+                              <div className="space-y-2">
+                                {stage.scrapLogs.map((scrap) => (
+                                  <div key={scrap.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                                    <p className="font-semibold text-slate-900">{scrap.wasteType}</p>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                      {scrap.quantity} {scrap.unit}
+                                      {scrap.notes ? ` · ${scrap.notes}` : ''}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

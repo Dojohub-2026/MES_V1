@@ -115,18 +115,6 @@ const swaggerDefinition = {
           sortOrder: { type: 'integer' },
         },
       },
-      BlueprintQcQuestion: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          questionText: { type: 'string' },
-          responseType: { type: 'string', enum: ['pass_fail', 'numeric', 'free_text'] },
-          numericMinValue: { type: 'number', nullable: true },
-          numericMaxValue: { type: 'number', nullable: true },
-          isRequired: { type: 'boolean' },
-          sortOrder: { type: 'integer' },
-        },
-      },
       BlueprintFaultCategory: {
         type: 'object',
         properties: {
@@ -149,18 +137,14 @@ const swaggerDefinition = {
           isArchived: { type: 'boolean' },
           guidelinesEnabled: { type: 'boolean' },
           guidelinesContent: { type: 'string', nullable: true },
+          // Checklist is nested under Quantity Logging — it's re-completed
+          // for every batch an operator logs (see BatchEntry.checklistData),
+          // and only has an effect when quantityLoggingEnabled is true.
           checklistEnabled: { type: 'boolean' },
-          checklistValidationTiming: {
-            type: 'string',
-            nullable: true,
-            enum: ['before_start', 'before_completion', 'both'],
-          },
           quantityLoggingEnabled: { type: 'boolean' },
-          qcFormEnabled: { type: 'boolean' },
           faultCategoriesEnabled: { type: 'boolean' },
           quantities: { type: 'array', items: { $ref: '#/components/schemas/BlueprintQuantity' } },
           checklistItems: { type: 'array', items: { $ref: '#/components/schemas/BlueprintChecklistItem' } },
-          qcQuestions: { type: 'array', items: { $ref: '#/components/schemas/BlueprintQcQuestion' } },
           faultCategories: { type: 'array', items: { $ref: '#/components/schemas/BlueprintFaultCategory' } },
         },
       },
@@ -193,7 +177,6 @@ const swaggerDefinition = {
           stageOrder: { type: 'integer' },
           stageName: { type: 'string' },
           instruction: { type: 'string', nullable: true },
-          requiresQc: { type: 'boolean' },
           estimatedDurationMinutes: { type: 'integer' },
           stationTag: { type: 'string', nullable: true },
           status: { type: 'string', enum: ['PENDING', 'AVAILABLE', 'RUNNING', 'PAUSED', 'COMPLETED'] },
@@ -225,18 +208,13 @@ const swaggerDefinition = {
             additionalProperties: { type: 'number' },
             example: { 'Units Filled': 25, 'Units Rejected': 18 },
           },
+          checklistData: {
+            type: 'object',
+            nullable: true,
+            additionalProperties: { type: 'boolean' },
+            description: 'BlueprintChecklistItem id -> whether it was checked for this batch. Null when the blueprint has no checklist enabled.',
+          },
           notes: { type: 'string', nullable: true },
-        },
-      },
-      QcResponse: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          stageId: { type: 'string', format: 'uuid' },
-          questionId: { type: 'string', format: 'uuid' },
-          responseText: { type: 'string', nullable: true },
-          passed: { type: 'boolean', nullable: true },
-          loggedAt: { type: 'string', format: 'date-time' },
         },
       },
       FaultLog: {

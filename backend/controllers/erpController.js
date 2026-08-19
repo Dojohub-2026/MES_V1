@@ -57,7 +57,6 @@ async function receiveWorkOrder(req, res) {
             stageName: step.station || `Step ${step.order}`,
             stationTag: step.station || null,
             instruction: step.instruction || null,
-            requiresQc: !!step.requires_qc,
             estimatedDurationMinutes: step.expected_duration_min || 0,
             status: 'PENDING',
           }))

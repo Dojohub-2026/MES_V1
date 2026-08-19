@@ -73,12 +73,10 @@ async function getStageDetail(req, res) {
           include: {
             checklistItems: { orderBy: { sortOrder: 'asc' } },
             quantities: { orderBy: { sortOrder: 'asc' } },
-            qcQuestions: { orderBy: { sortOrder: 'asc' } },
             faultCategories: { orderBy: { sortOrder: 'asc' } },
           },
         },
         sessions: { where: { endedAt: null }, orderBy: { startedAt: 'desc' }, take: 1 },
-        qcResponses: true,
       },
     });
 
@@ -96,20 +94,18 @@ async function getStageDetail(req, res) {
       instruction: stage.instruction,
       stationTag: stage.stationTag,
       status: stage.status,
-      requiresQc: stage.requiresQc,
       scheduledStartAt: stage.scheduledStartAt,
       actualStartedAt: stage.actualStartedAt,
       openSessionStartedAt: stage.sessions[0]?.startedAt ?? null,
       guidelinesEnabled: bp?.guidelinesEnabled ?? false,
       guidelinesContent: bp?.guidelinesContent ?? null,
+      // Checklist only actually gates anything when quantityLoggingEnabled
+      // is also true — it's completed per batch now (see logQuantity),
+      // not once per stage lifecycle.
       checklistEnabled: bp?.checklistEnabled ?? false,
-      checklistValidationTiming: bp?.checklistValidationTiming ?? null,
       checklistItems: bp?.checklistItems ?? [],
       quantityLoggingEnabled: bp?.quantityLoggingEnabled ?? false,
       quantityMetrics: bp?.quantities ?? [],
-      qcFormEnabled: bp?.qcFormEnabled ?? false,
-      qcQuestions: bp?.qcQuestions ?? [],
-      qcResponses: stage.qcResponses,
       faultCategoriesEnabled: bp?.faultCategoriesEnabled ?? false,
       faultCategories: bp?.faultCategories ?? [],
     });
@@ -336,7 +332,7 @@ async function getQuantityLogs(req, res) {
 }
 
 async function logQuantity(req, res) {
-  const { entries, notes } = req.body;
+  const { entries, notes, checklist } = req.body;
   if (!Array.isArray(entries) || entries.length === 0) {
     return res.status(400).json({ message: 'entries must be a non-empty array' });
   }
@@ -344,6 +340,31 @@ async function logQuantity(req, res) {
   try {
     const stage = await ensureOwnedStage(req.params.id, req.user.id);
     if (!stage) return res.status(404).json({ message: 'Stage not found' });
+
+    // The checklist is completed fresh for every batch (not once per
+    // stage) — enforced here, not just client-side, since this is the one
+    // place a batch actually gets persisted. checklistData records exactly
+    // which items were checked for THIS batch, for audit/compliance.
+    let checklistData = null;
+    if (stage.blueprintId) {
+      const blueprint = await prisma.blueprint.findUnique({
+        where: { id: stage.blueprintId },
+        select: { checklistEnabled: true, checklistItems: { select: { id: true, isRequired: true } } },
+      });
+      if (blueprint?.checklistEnabled && blueprint.checklistItems.length > 0) {
+        const checkedIds = new Set(
+          (Array.isArray(checklist) ? checklist : []).filter((c) => c.checked).map((c) => c.itemId)
+        );
+        const missingRequired = blueprint.checklistItems.some((item) => item.isRequired && !checkedIds.has(item.id));
+        if (missingRequired) {
+          return res.status(400).json({ message: 'Complete all required checklist items before logging this batch' });
+        }
+        checklistData = blueprint.checklistItems.reduce((acc, item) => {
+          acc[item.id] = checkedIds.has(item.id);
+          return acc;
+        }, {});
+      }
+    }
 
     // An operator can log several quantity batches within the same run of
     // a stage (e.g. one entry per physical batch of bottles filled), so
@@ -376,6 +397,7 @@ async function logQuantity(req, res) {
         sessionId: session.id,
         batchNumber: nextBatchNumber,
         quantityData,
+        checklistData,
         notes: notes || null,
       },
     });
@@ -386,41 +408,6 @@ async function logQuantity(req, res) {
     return res.status(201).json(batch);
   } catch (error) {
     return res.status(500).json({ message: 'Failed to log quantity', error: error.message });
-  }
-}
-
-async function submitQc(req, res) {
-  const { responses } = req.body;
-  if (!Array.isArray(responses) || responses.length === 0) {
-    return res.status(400).json({ message: 'responses must be a non-empty array' });
-  }
-
-  try {
-    const stage = await ensureOwnedStage(req.params.id, req.user.id);
-    if (!stage) return res.status(404).json({ message: 'Stage not found' });
-
-    // Upserted on (stageId, questionId), so re-submitting an answer to the
-    // same question always overwrites the previous one rather than piling
-    // up duplicate responses — an operator can correct a QC answer by
-    // simply submitting it again.
-    const results = await prisma.$transaction(
-      responses.map((r) =>
-        prisma.qcResponse.upsert({
-          where: { stageId_questionId: { stageId: stage.id, questionId: r.questionId } },
-          update: { responseText: r.responseText ?? null, passed: r.passed ?? null },
-          create: {
-            stageId: stage.id,
-            questionId: r.questionId,
-            responseText: r.responseText ?? null,
-            passed: r.passed ?? null,
-          },
-        })
-      )
-    );
-
-    return res.status(200).json({ responses: results });
-  } catch (error) {
-    return res.status(500).json({ message: 'Failed to submit QC responses', error: error.message });
   }
 }
 
@@ -469,6 +456,5 @@ module.exports = {
   completeStage,
   getQuantityLogs,
   logQuantity,
-  submitQc,
   reportFault,
 };

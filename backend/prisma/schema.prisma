@@ -58,16 +58,17 @@ model Blueprint {
   isArchived                Boolean                  @default(false)
   guidelinesEnabled         Boolean                  @default(false)
   guidelinesContent         String?
+  // Checklist is no longer a standalone stage-lifecycle gate — it's nested
+  // under Quantity Logging and re-completed for every batch an operator
+  // logs (see BatchEntry.checklistData). checklistEnabled only has an
+  // effect when quantityLoggingEnabled is also true.
   checklistEnabled          Boolean                  @default(false)
-  checklistValidationTiming String?
   quantityLoggingEnabled    Boolean                  @default(false)
-  qcFormEnabled             Boolean                  @default(false)
   faultCategoriesEnabled    Boolean                  @default(false)
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   checklistItems            BlueprintChecklistItem[]
   faultCategories           BlueprintFaultCategory[]
-  qcQuestions               BlueprintQcQuestion[]
   quantities                BlueprintQuantity[]
   stages                    JobStage[]
 
@@ -99,22 +100,6 @@ model BlueprintChecklistItem {
   blueprint   Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
 
   @@map("blueprint_checklist_items")
-}
-
-model BlueprintQcQuestion {
-  id              String       @id @default(uuid())
-  blueprintId     String
-  questionText    String
-  responseType    String
-  numericMinValue Float?
-  numericMaxValue Float?
-  isRequired      Boolean      @default(true)
-  sortOrder       Int          @default(0)
-  createdAt       DateTime     @default(now())
-  blueprint       Blueprint    @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
-  responses       QcResponse[]
-
-  @@map("blueprint_qc_questions")
 }
 
 model BlueprintFaultCategory {
@@ -169,7 +154,6 @@ model JobStage {
   stageOrder               Int
   stageName                String
   instruction              String?
-  requiresQc               Boolean          @default(false)
   estimatedDurationMinutes Int              @default(0)
   stationTag               String?
   status                   StageStatus      @default(PENDING)
@@ -186,7 +170,6 @@ model JobStage {
   operator                 User?            @relation("StageOperator", fields: [operatorId], references: [id])
   sessions                 ProcessSession[]
   scrapLogs                ScrapLog[]
-  qcResponses              QcResponse[]
 
   @@unique([jobId, stageOrder])
   @@map("job_stages")
@@ -236,20 +219,6 @@ model JobDowntimeLog {
   @@map("job_downtime_logs")
 }
 
-model QcResponse {
-  id           String              @id @default(uuid())
-  stageId      String
-  questionId   String
-  responseText String?
-  passed       Boolean?
-  loggedAt     DateTime            @default(now())
-  stage        JobStage            @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  question     BlueprintQcQuestion @relation(fields: [questionId], references: [id])
-
-  @@unique([stageId, questionId])
-  @@map("qc_responses")
-}
-
 model ProcessSession {
   id         String       @id @default(uuid())
   stageId    String
@@ -265,13 +234,18 @@ model ProcessSession {
 }
 
 model BatchEntry {
-  id           String         @id @default(uuid())
-  sessionId    String
-  batchNumber  Int
-  loggedAt     DateTime       @default(now())
-  quantityData Json
-  notes        String?
-  session      ProcessSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id            String         @id @default(uuid())
+  sessionId     String
+  batchNumber   Int
+  loggedAt      DateTime       @default(now())
+  quantityData  Json
+  // Which of the blueprint's checklist items were confirmed for THIS batch
+  // — the checklist is re-completed per batch now, not once per stage, so
+  // each batch carries its own compliance record. Null when the blueprint
+  // doesn't have checklistEnabled.
+  checklistData Json?
+  notes         String?
+  session       ProcessSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, batchNumber])
   @@map("batch_entries")
