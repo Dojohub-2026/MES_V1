@@ -99,7 +99,6 @@ function buildStageRows(stages, startTime) {
       stageOrder: idx,
       stageName: s.stageName,
       instruction: s.instruction || null,
-      requiresQc: !!s.requiresQc,
       estimatedDurationMinutes: durationMin,
       stationTag: s.stationTag || null,
       operatorId: s.operatorId || null,
@@ -194,10 +193,6 @@ async function getJob(req, res) {
               include: { operator: { select: { id: true, name: true } } },
             },
             scrapLogs: { orderBy: { loggedAt: 'desc' } },
-            qcResponses: {
-              orderBy: { loggedAt: 'desc' },
-              include: { question: { select: { id: true, questionText: true, responseType: true } } },
-            },
           },
         },
         materialRequirements: { orderBy: { sortOrder: 'asc' } },

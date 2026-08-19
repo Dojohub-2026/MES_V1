@@ -16,12 +16,6 @@ interface DowntimeEntry {
   reason: string | null;
 }
 
-interface QcResult {
-  step: string;
-  'pass/fail': 'pass' | 'fail';
-  notes: string | null;
-}
-
 interface StageMetric {
   name: string;
   unit: string;
@@ -57,7 +51,6 @@ interface ErpPayload {
   actual_scrap: number;
   materials_consumed: MaterialConsumed[];
   downtime_log: DowntimeEntry[];
-  qc_results: QcResult[];
   stages: StageReport[];
   scrap_breakdown: ScrapBreakdownEntry[];
 }
@@ -264,41 +257,6 @@ export function ProductionDataPreviewModal({ jobId, jobName, onClose, onSend, se
                           <td className="py-1.5 pr-3 text-slate-500">{new Date(d.start).toLocaleString()}</td>
                           <td className="py-1.5 pr-3 text-slate-500">{new Date(d.end).toLocaleString()}</td>
                           <td className="py-1.5 text-slate-900">{d.reason ?? '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </PreviewSection>
-
-              <PreviewSection title="QC Results" count={payload.qc_results.length}>
-                {payload.qc_results.length === 0 ? (
-                  <EmptyRow>No pass/fail QC results on this job.</EmptyRow>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs font-bold text-slate-400 uppercase tracking-wide">
-                        <th className="pb-1.5 pr-3">Step</th>
-                        <th className="pb-1.5 pr-3">Result</th>
-                        <th className="pb-1.5">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payload.qc_results.map((q, i) => (
-                        <tr key={i} className="border-t border-slate-100">
-                          <td className="py-1.5 pr-3 text-slate-900">{q.step}</td>
-                          <td className="py-1.5 pr-3">
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                q['pass/fail'] === 'pass'
-                                  ? 'bg-success-100 text-success-700 border-success-200'
-                                  : 'bg-danger-100 text-danger-700 border-danger-200'
-                              }`}
-                            >
-                              {q['pass/fail'].toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="py-1.5 text-slate-500">{q.notes ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>

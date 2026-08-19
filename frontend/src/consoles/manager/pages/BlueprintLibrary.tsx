@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Layers, Plus, Search, Archive, X, Clock, MapPin,
-  FileText, CheckSquare, BarChart3, ClipboardCheck, AlertTriangle,
+  FileText, CheckSquare, BarChart3, AlertTriangle,
   Edit3, Loader2,
 } from 'lucide-react';
 import { api } from '../../../shared/lib/api';
@@ -18,7 +18,6 @@ export interface Blueprint {
   guidelinesEnabled: boolean;
   checklistEnabled: boolean;
   quantityLoggingEnabled: boolean;
-  qcFormEnabled: boolean;
   faultCategoriesEnabled: boolean;
 }
 
@@ -47,7 +46,6 @@ function BlueprintCard({ blueprint, onEdit, onArchive }: {
     { on: blueprint.guidelinesEnabled, label: 'Guidelines', icon: <FileText size={12} /> },
     { on: blueprint.checklistEnabled, label: 'Checklist', icon: <CheckSquare size={12} /> },
     { on: blueprint.quantityLoggingEnabled, label: 'Quantity', icon: <BarChart3 size={12} /> },
-    { on: blueprint.qcFormEnabled, label: 'QC Form', icon: <ClipboardCheck size={12} /> },
     { on: blueprint.faultCategoriesEnabled, label: 'Faults', icon: <AlertTriangle size={12} /> },
   ].filter((f) => f.on);
 

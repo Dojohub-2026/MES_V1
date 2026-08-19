@@ -9,6 +9,7 @@ import {
   Layers,
   CheckCircle2,
   Clock,
+  CalendarClock,
   FileEdit,
   ArrowRight,
   Send,
@@ -50,6 +51,7 @@ interface ActiveJob {
   jobId: string;
   name: string;
   productName: string | null;
+  scheduledStartAt: string | null;
   stages: JobStage[];
 }
 
@@ -61,6 +63,7 @@ interface DraftJob {
   source: 'MANUAL' | 'ERP';
   batchNumber: string | null;
   lineId: string | null;
+  scheduledStartAt: string | null;
   stages: JobStage[];
 }
 
@@ -71,6 +74,7 @@ interface CompletedJob {
   productName: string | null;
   source: 'MANUAL' | 'ERP';
   batchNumber: string | null;
+  scheduledStartAt: string | null;
 }
 
 interface Alert {
@@ -319,6 +323,12 @@ export function Operations() {
                       <Package size={14} className="text-slate-400" />
                       <span className="font-mono text-xs text-slate-500">{job.jobId}</span>
                       <span className="font-semibold text-slate-900">{job.name}</span>
+                      {job.scheduledStartAt && (
+                        <span className="flex items-center gap-1 text-xs text-slate-400">
+                          <CalendarClock size={12} />
+                          {new Date(job.scheduledStartAt).toLocaleString()}
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-slate-500">
                       {job.stages.filter((s) => s.status === 'COMPLETED').length} / {job.stages.length} stages
@@ -441,6 +451,12 @@ export function Operations() {
                 </div>
                 <p className="text-sm font-semibold text-slate-900 truncate">{job.name}</p>
                 {job.batchNumber && <p className="text-xs text-slate-500 mt-0.5">Batch {job.batchNumber}</p>}
+                {job.scheduledStartAt && (
+                  <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                    <CalendarClock size={12} />
+                    {new Date(job.scheduledStartAt).toLocaleString()}
+                  </p>
+                )}
                 <p className="text-xs text-slate-400 mt-1">{job.stages.length} stage{job.stages.length === 1 ? '' : 's'} built</p>
                 {!job.lineId && (
                   <p className="text-xs text-warning-600 mt-1 font-medium">No production line assigned yet</p>
@@ -489,6 +505,12 @@ export function Operations() {
                   </div>
                   <p className="text-sm font-semibold text-slate-900 truncate">{job.name}</p>
                   {job.batchNumber && <p className="text-xs text-slate-500 mt-0.5">Batch {job.batchNumber}</p>}
+                  {job.scheduledStartAt && (
+                    <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                      <CalendarClock size={12} />
+                      {new Date(job.scheduledStartAt).toLocaleString()}
+                    </p>
+                  )}
 
                   {job.source !== 'ERP' ? (
                     <p className="text-xs text-slate-400 mt-3 italic">Not an ERP work order — nothing to report back.</p>

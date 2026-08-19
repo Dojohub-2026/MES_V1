@@ -9,6 +9,7 @@ import {
   ChevronRight,
   MapPin,
   Clock,
+  CalendarClock,
   Package,
   AlertTriangle,
   X,
@@ -109,6 +110,12 @@ function ProcessCard({ stage, onSelect }: { stage: AssignmentStage; onSelect: ()
             <span className="flex items-center gap-1.5">
               <Clock size={18} className="text-slate-400" strokeWidth={2.5} />
               ~{stage.estimatedDurationMinutes} min
+            </span>
+          )}
+          {stage.scheduledStartAt && (
+            <span className="flex items-center gap-1.5">
+              <CalendarClock size={18} className="text-slate-400" strokeWidth={2.5} />
+              {new Date(stage.scheduledStartAt).toLocaleString()}
             </span>
           )}
         </div>

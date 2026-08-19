@@ -29,7 +29,7 @@ router.get('/', authenticateToken, requireRole('MANAGER'), blueprintController.g
  * @swagger
  * /blueprints/{id}:
  *   get:
- *     summary: Get a single blueprint with its checklist/QC/quantity/fault sections
+ *     summary: Get a single blueprint with its checklist/quantity/fault sections
  *     tags: [Blueprints]
  *     security: [{ bearerAuth: [] }]
  *     parameters:

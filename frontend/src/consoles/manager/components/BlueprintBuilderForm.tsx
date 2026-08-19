@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
   X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Plus, Trash2,
-  FileText, CheckSquare, BarChart3, ClipboardCheck, AlertTriangle, Save, Loader2,
+  FileText, CheckSquare, BarChart3, AlertTriangle, Save, Loader2,
 } from 'lucide-react';
 import { api } from '../../../shared/lib/api';
 
 interface ChecklistItemForm { itemText: string; isRequired: boolean; }
 interface QuantityMetricForm { metricName: string; unitLabel: string; minValue: number | null; maxValue: number | null; inputFrequency: 'ONCE' | 'PER_BATCH' | 'HOURLY'; }
-interface QcQuestionForm { questionText: string; responseType: 'pass_fail' | 'numeric' | 'free_text'; numericMinValue: number | null; numericMaxValue: number | null; isRequired: boolean; }
 interface FaultCategoryForm { faultName: string; }
 
 interface FormState {
@@ -18,13 +17,12 @@ interface FormState {
   estimatedDurationMinutes: number;
   guidelinesEnabled: boolean;
   guidelinesContent: string;
+  // Checklist lives inside the Quantity Logging panel below — it's
+  // completed fresh for every batch an operator logs, not once per stage.
   checklistEnabled: boolean;
-  checklistValidationTiming: string;
   checklistItems: ChecklistItemForm[];
   quantityLoggingEnabled: boolean;
   quantityMetrics: QuantityMetricForm[];
-  qcFormEnabled: boolean;
-  qcQuestions: QcQuestionForm[];
   faultCategoriesEnabled: boolean;
   faultCategories: FaultCategoryForm[];
 }
@@ -32,9 +30,8 @@ interface FormState {
 const emptyForm: FormState = {
   name: '', description: '', category: 'preparation', stationTag: '', estimatedDurationMinutes: 15,
   guidelinesEnabled: false, guidelinesContent: '',
-  checklistEnabled: false, checklistValidationTiming: 'before_start', checklistItems: [],
+  checklistEnabled: false, checklistItems: [],
   quantityLoggingEnabled: false, quantityMetrics: [],
-  qcFormEnabled: false, qcQuestions: [],
   faultCategoriesEnabled: false, faultCategories: [],
 };
 
@@ -90,12 +87,10 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
           name: bp.name, description: bp.description || '', category: bp.category,
           stationTag: bp.stationTag || '', estimatedDurationMinutes: bp.estimatedDurationMinutes,
           guidelinesEnabled: bp.guidelinesEnabled, guidelinesContent: bp.guidelinesContent || '',
-          checklistEnabled: bp.checklistEnabled, checklistValidationTiming: bp.checklistValidationTiming || 'before_start',
+          checklistEnabled: bp.checklistEnabled,
           checklistItems: bp.checklistItems.map((c: any) => ({ itemText: c.itemText, isRequired: c.isRequired })),
           quantityLoggingEnabled: bp.quantityLoggingEnabled,
           quantityMetrics: bp.quantities.map((q: any) => ({ metricName: q.metricName, unitLabel: q.unitLabel, minValue: q.minValue, maxValue: q.maxValue, inputFrequency: q.inputFrequency })),
-          qcFormEnabled: bp.qcFormEnabled,
-          qcQuestions: bp.qcQuestions.map((q: any) => ({ questionText: q.questionText, responseType: q.responseType, numericMinValue: q.numericMinValue, numericMaxValue: q.numericMaxValue, isRequired: q.isRequired })),
           faultCategoriesEnabled: bp.faultCategoriesEnabled,
           faultCategories: bp.faultCategories.map((f: any) => ({ faultName: f.faultName})),
         });
@@ -208,63 +203,7 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
       </TogglePanel>
 
       <TogglePanel
-        title="Checklist" description="Required steps operators must confirm"
-        icon={<CheckSquare size={18} />} enabled={form.checklistEnabled}
-        onToggle={(v) => setForm({ ...form, checklistEnabled: v })}
-      >
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Validation Timing</label>
-            <select
-              value={form.checklistValidationTiming}
-              onChange={(e) => setForm({ ...form, checklistValidationTiming: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-            >
-              <option value="before_start">Before Start</option>
-              <option value="before_completion">Before Completion</option>
-              <option value="both">Both</option>
-            </select>
-          </div>
-          {form.checklistItems.map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                value={item.itemText}
-                onChange={(e) => {
-                  const items = [...form.checklistItems];
-                  items[i] = { ...items[i], itemText: e.target.value };
-                  setForm({ ...form, checklistItems: items });
-                }}
-                placeholder="Checklist item"
-                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-              />
-              <label className="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={item.isRequired}
-                  onChange={(e) => {
-                    const items = [...form.checklistItems];
-                    items[i] = { ...items[i], isRequired: e.target.checked };
-                    setForm({ ...form, checklistItems: items });
-                  }}
-                /> Required
-              </label>
-              <button type="button" onClick={() => setForm({ ...form, checklistItems: form.checklistItems.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-danger-600">
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, checklistItems: [...form.checklistItems, { itemText: '', isRequired: true }] })}
-            className="flex items-center gap-1.5 text-sm font-medium text-navy-600 hover:text-navy-700"
-          >
-            <Plus size={16} /> Add Item
-          </button>
-        </div>
-      </TogglePanel>
-
-      <TogglePanel
-        title="Quantity Logging" description="Numeric metrics operators log during the stage"
+        title="Quantity Logging" description="Batches operators log during the stage, with an optional per-batch checklist"
         icon={<BarChart3 size={18} />} enabled={form.quantityLoggingEnabled}
         onToggle={(v) => setForm({ ...form, quantityLoggingEnabled: v })}
       >
@@ -312,59 +251,59 @@ export function BlueprintBuilderForm({ blueprintId, onCancel, onSaved }: {
           >
             <Plus size={16} /> Add Metric
           </button>
-        </div>
-      </TogglePanel>
 
-      <TogglePanel
-        title="Quality Control Form" description="Quality control questions for this stage"
-        icon={<ClipboardCheck size={18} />} enabled={form.qcFormEnabled}
-        onToggle={(v) => setForm({ ...form, qcFormEnabled: v })}
-      >
-        <div className="space-y-3">
-          {form.qcQuestions.map((q, i) => (
-            <div key={i} className="space-y-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="pt-4 mt-1 border-t border-slate-200">
+            <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <input
-                  value={q.questionText}
-                  onChange={(e) => { const arr = [...form.qcQuestions]; arr[i] = { ...arr[i], questionText: e.target.value }; setForm({ ...form, qcQuestions: arr }); }}
-                  placeholder="Question" className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
-                />
-                <select
-                  value={q.responseType}
-                  onChange={(e) => { const arr = [...form.qcQuestions]; arr[i] = { ...arr[i], responseType: e.target.value as any }; setForm({ ...form, qcQuestions: arr }); }}
-                  className="px-2 py-2 bg-white border border-slate-200 rounded-lg text-xs"
+                <CheckSquare size={16} className="text-navy-600" />
+                <h4 className="text-sm font-semibold text-slate-800">Batch Checklist</h4>
+              </div>
+              <button type="button" onClick={() => setForm({ ...form, checklistEnabled: !form.checklistEnabled })}>
+                {form.checklistEnabled ? <ToggleRight size={22} className="text-navy-600" /> : <ToggleLeft size={22} className="text-slate-300" />}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">Operators complete these items before logging each batch.</p>
+
+            {form.checklistEnabled && (
+              <div className="space-y-3">
+                {form.checklistItems.map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      value={item.itemText}
+                      onChange={(e) => {
+                        const items = [...form.checklistItems];
+                        items[i] = { ...items[i], itemText: e.target.value };
+                        setForm({ ...form, checklistItems: items });
+                      }}
+                      placeholder="Checklist item"
+                      className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                    />
+                    <label className="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={item.isRequired}
+                        onChange={(e) => {
+                          const items = [...form.checklistItems];
+                          items[i] = { ...items[i], isRequired: e.target.checked };
+                          setForm({ ...form, checklistItems: items });
+                        }}
+                      /> Required
+                    </label>
+                    <button type="button" onClick={() => setForm({ ...form, checklistItems: form.checklistItems.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-danger-600">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, checklistItems: [...form.checklistItems, { itemText: '', isRequired: true }] })}
+                  className="flex items-center gap-1.5 text-sm font-medium text-navy-600 hover:text-navy-700"
                 >
-                  <option value="pass_fail">Pass/Fail</option>
-                  {/*<option value="numeric">Numeric</option>
-                  <option value="free_text">Free Text</option>*/}
-                </select>
-                <button type="button" onClick={() => setForm({ ...form, qcQuestions: form.qcQuestions.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-danger-600">
-                  <Trash2 size={16} />
+                  <Plus size={16} /> Add Item
                 </button>
               </div>
-              {q.responseType === 'numeric' && (
-                <div className="flex gap-2">
-                  <input
-                    type="number" value={q.numericMinValue ?? ''}
-                    onChange={(e) => { const arr = [...form.qcQuestions]; arr[i] = { ...arr[i], numericMinValue: e.target.value === '' ? null : Number(e.target.value) }; setForm({ ...form, qcQuestions: arr }); }}
-                    placeholder="Min" className="w-24 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
-                  />
-                  <input
-                    type="number" value={q.numericMaxValue ?? ''}
-                    onChange={(e) => { const arr = [...form.qcQuestions]; arr[i] = { ...arr[i], numericMaxValue: e.target.value === '' ? null : Number(e.target.value) }; setForm({ ...form, qcQuestions: arr }); }}
-                    placeholder="Max" className="w-24 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, qcQuestions: [...form.qcQuestions, { questionText: '', responseType: 'pass_fail', numericMinValue: null, numericMaxValue: null, isRequired: true }] })}
-            className="flex items-center gap-1.5 text-sm font-medium text-navy-600 hover:text-navy-700"
-          >
-            <Plus size={16} /> Add Question
-          </button>
+            )}
+          </div>
         </div>
       </TogglePanel>
 

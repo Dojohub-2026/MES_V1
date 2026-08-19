@@ -43,22 +43,6 @@ export interface QuantityMetric {
   inputFrequency: 'ONCE' | 'PER_BATCH' | 'HOURLY';
 }
 
-export interface QcQuestion {
-  id: string;
-  questionText: string;
-  responseType: 'pass_fail' | 'numeric' | 'text';
-  numericMinValue: number | null;
-  numericMaxValue: number | null;
-  isRequired: boolean;
-}
-
-export interface QcResponseRecord {
-  id: string;
-  questionId: string;
-  responseText: string | null;
-  passed: boolean | null;
-}
-
 export interface FaultCategory {
   id: string;
   faultName: string;
@@ -76,20 +60,17 @@ export interface StageDetail {
   instruction: string | null;
   stationTag: string | null;
   status: StageStatus;
-  requiresQc: boolean;
   scheduledStartAt: string | null;
   actualStartedAt: string | null;
   openSessionStartedAt: string | null;
   guidelinesEnabled: boolean;
   guidelinesContent: string | null;
+  // Only has an effect when quantityLoggingEnabled is also true — the
+  // checklist is completed fresh for every batch, not once per stage.
   checklistEnabled: boolean;
-  checklistValidationTiming: 'before_start' | 'before_completion' | 'both' | null;
   checklistItems: ChecklistItem[];
   quantityLoggingEnabled: boolean;
   quantityMetrics: QuantityMetric[];
-  qcFormEnabled: boolean;
-  qcQuestions: QcQuestion[];
-  qcResponses: QcResponseRecord[];
   faultCategoriesEnabled: boolean;
   faultCategories: FaultCategory[];
 }
@@ -100,6 +81,7 @@ export interface BatchEntry {
   batchNumber: number;
   loggedAt: string;
   quantityData: Record<string, number>;
+  checklistData: Record<string, boolean> | null;
   notes: string | null;
 }
 

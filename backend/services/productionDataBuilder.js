@@ -124,34 +124,6 @@ function buildProductionReport(job) {
 function buildProductionDataPayload(job) {
   const report = buildProductionReport(job);
 
-  // Real QC results — every question an operator answered, across every
-  // stage of the job, joined back to its blueprint question text. Free-text
-  // responses with no derivable pass/fail are dropped rather than sent as
-  // null — ERP's schema requires a real 'pass'/'fail' enum value per entry.
-  const qcResults = job.stages
-    .flatMap((stage) =>
-      stage.qcResponses.map((r) => {
-        let passFail = null;
-        if (r.passed !== null && r.passed !== undefined) {
-          passFail = r.passed ? 'pass' : 'fail';
-        } else if (
-          r.question.responseType === 'numeric' &&
-          r.question.numericMinValue != null &&
-          r.question.numericMaxValue != null &&
-          r.responseText
-        ) {
-          const value = Number(r.responseText);
-          passFail = value >= r.question.numericMinValue && value <= r.question.numericMaxValue ? 'pass' : 'fail';
-        }
-        return {
-          step: r.question.questionText,
-          'pass/fail': passFail,
-          notes: r.responseText ?? null,
-        };
-      })
-    )
-    .filter((r) => r['pass/fail'] !== null);
-
   return {
     work_order_id: job.externalWorkOrderId,
     job_id: job.jobId,
@@ -179,7 +151,6 @@ function buildProductionDataPayload(job) {
         end: d.endedAt,
         reason: d.reason,
       })),
-    qc_results: qcResults,
   };
 }
 
@@ -191,7 +162,6 @@ const PRODUCTION_DATA_INCLUDE = {
     orderBy: { stageOrder: 'asc' },
     include: {
       faults: true,
-      qcResponses: { include: { question: true } },
       blueprint: { include: { quantities: { orderBy: { sortOrder: 'asc' } } } },
       sessions: {
         include: {

@@ -3,7 +3,6 @@ const prisma = require('../prismaClient');
 const CHILD_INCLUDE = {
   checklistItems: { orderBy: { sortOrder: 'asc' } },
   quantities: { orderBy: { sortOrder: 'asc' } },
-  qcQuestions: { orderBy: { sortOrder: 'asc' } },
   faultCategories: { orderBy: { sortOrder: 'asc' } },
 };
 
@@ -23,16 +22,6 @@ function buildNestedCreates(body) {
         minValue: m.minValue ?? null,
         maxValue: m.maxValue ?? null,
         inputFrequency: m.inputFrequency,
-        sortOrder: i,
-      })),
-    },
-    qcQuestions: {
-      create: (body.qcQuestions || []).map((q, i) => ({
-        questionText: q.questionText,
-        responseType: q.responseType,
-        numericMinValue: q.numericMinValue ?? null,
-        numericMaxValue: q.numericMaxValue ?? null,
-        isRequired: q.isRequired ?? true,
         sortOrder: i,
       })),
     },
@@ -79,10 +68,11 @@ async function create(req, res) {
         estimatedDurationMinutes: body.estimatedDurationMinutes || 0,
         guidelinesEnabled: !!body.guidelinesEnabled,
         guidelinesContent: body.guidelinesContent || null,
+        // checklistEnabled only takes effect when quantityLoggingEnabled is
+        // also true — the checklist is re-completed per batch now, nested
+        // under Quantity Logging rather than a standalone stage gate.
         checklistEnabled: !!body.checklistEnabled,
-        checklistValidationTiming: body.checklistValidationTiming || null,
         quantityLoggingEnabled: !!body.quantityLoggingEnabled,
-        qcFormEnabled: !!body.qcFormEnabled,
         faultCategoriesEnabled: !!body.faultCategoriesEnabled,
         ...buildNestedCreates(body),
       },
@@ -101,7 +91,6 @@ async function update(req, res) {
     const blueprint = await prisma.$transaction(async (tx) => {
       await tx.blueprintChecklistItem.deleteMany({ where: { blueprintId: id } });
       await tx.blueprintQuantity.deleteMany({ where: { blueprintId: id } });
-      await tx.blueprintQcQuestion.deleteMany({ where: { blueprintId: id } });
       await tx.blueprintFaultCategory.deleteMany({ where: { blueprintId: id } });
 
       return tx.blueprint.update({
@@ -115,9 +104,7 @@ async function update(req, res) {
           guidelinesEnabled: !!body.guidelinesEnabled,
           guidelinesContent: body.guidelinesContent || null,
           checklistEnabled: !!body.checklistEnabled,
-          checklistValidationTiming: body.checklistValidationTiming || null,
           quantityLoggingEnabled: !!body.quantityLoggingEnabled,
-          qcFormEnabled: !!body.qcFormEnabled,
           faultCategoriesEnabled: !!body.faultCategoriesEnabled,
           ...buildNestedCreates(body),
         },

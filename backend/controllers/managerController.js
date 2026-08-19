@@ -71,6 +71,7 @@ async function getActiveJobs(req, res) {
       source: job.source,
       batchNumber: job.batchNumber,
       lineId: job.lineId,
+      scheduledStartAt: job.scheduledStartAt,
       stages: job.stages.map((stage) => ({
         id: stage.id,
         stageOrder: stage.stageOrder,
