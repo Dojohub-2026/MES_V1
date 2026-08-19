@@ -177,12 +177,21 @@ export default function JobBuilder() {
     ]);
   };
 
-  const handleRemoveStage = (tempId: string) => setStages((prev) => prev.filter((s) => s.tempId !== tempId));
+  const handleRemoveStage = (tempId: string) => {
+    if (jobSource === 'ERP') return;
+    setStages((prev) => prev.filter((s) => s.tempId !== tempId));
+  };
 
   const handleAssignOperator = (tempId: string, operatorId: string) =>
     setStages((prev) => prev.map((s) => (s.tempId === tempId ? { ...s, operatorId } : s)));
 
+  // ERP work orders arrive with their own metadata and stage sequence from
+  // the external system — a manager may only add processes and assign
+  // operators to them, not rename/re-target/reschedule/reorder/remove.
+  const isErpLocked = jobSource === 'ERP';
+
   const handleDragEnd = (event: DragEndEvent) => {
+    if (isErpLocked) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setStages((prev) => {
@@ -303,7 +312,8 @@ export default function JobBuilder() {
             <select
               value={lineId}
               onChange={(e) => handleLineSelect(e.target.value)}
-              className="w-48 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+              disabled={isErpLocked}
+              className="w-48 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <option value="">Select line...</option>
               {lines.map((l) => (
@@ -317,7 +327,8 @@ export default function JobBuilder() {
               value={jobName}
               onChange={(e) => setJobName(e.target.value)}
               placeholder="e.g. Morning Mango Batch Run"
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+              disabled={isErpLocked}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
           <div>
@@ -327,12 +338,14 @@ export default function JobBuilder() {
                 type="number"
                 value={targetQuantity}
                 onChange={(e) => setTargetQuantity(parseInt(e.target.value) || 0)}
-                className="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                disabled={isErpLocked}
+                className="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               />
               <input
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="w-20 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                disabled={isErpLocked}
+                className="w-20 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -342,13 +355,14 @@ export default function JobBuilder() {
               type="datetime-local"
               value={scheduledStartAt}
               onChange={(e) => setScheduledStartAt(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+              disabled={isErpLocked}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
         </div>
         {jobSource === 'ERP' && (
-          <span className="px-3 py-1.5 bg-info-100 text-info-700 text-xs font-bold rounded-full flex-shrink-0">
-            From ERP Work Order
+          <span className="px-3 py-1.5 bg-info-100 text-info-700 text-xs font-bold rounded-full flex-shrink-0" title="Only adding processes and assigning operators is allowed for ERP work orders">
+            From ERP Work Order — locked except processes &amp; operators
           </span>
         )}
       </div>
@@ -413,6 +427,7 @@ export default function JobBuilder() {
                       onAssignOperator={handleAssignOperator}
                       onRemove={handleRemoveStage}
                       invalid={invalidStage(stage)}
+                      locked={isErpLocked}
                     />
                   ))}
                 </div>

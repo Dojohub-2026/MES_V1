@@ -266,6 +266,7 @@ async function getAnalytics(req, res) {
       batchNumber: b.batchNumber,
       loggedAt: b.loggedAt,
       quantityData: b.quantityData,
+      checklistData: b.checklistData,
       notes: b.notes,
       jobId: b.session?.stage?.job?.jobId ?? null,
       jobName: b.session?.stage?.job?.name ?? null,

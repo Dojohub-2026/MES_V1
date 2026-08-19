@@ -85,6 +85,7 @@ interface BatchLogRow {
   batchNumber: number;
   loggedAt: string;
   quantityData: Record<string, number>;
+  checklistData: Record<string, boolean> | null;
   notes: string | null;
   jobId: string | null;
   jobName: string | null;
@@ -491,6 +492,7 @@ function ScrapTrackingTab({ scrapData, batchData }: { scrapData: ScrapRecord[]; 
                   <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Operator</th>
                   <th className="text-center px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Batch #</th>
                   <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Quantities Logged</th>
+                  <th className="text-center px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Checklist</th>
                   <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Logged At</th>
                 </tr>
               </thead>
@@ -513,6 +515,22 @@ function ScrapTrackingTab({ scrapData, batchData }: { scrapData: ScrapRecord[]; 
                         ))}
                       </div>
                       {row.notes && <p className="text-xs text-slate-500 italic mt-1.5">"{row.notes}"</p>}
+                    </td>
+                    <td className="px-6 py-4 text-center text-xs">
+                      {row.checklistData ? (
+                        (() => {
+                          const values = Object.values(row.checklistData);
+                          const done = values.filter(Boolean).length;
+                          const allDone = done === values.length;
+                          return (
+                            <span className={`font-semibold px-2 py-0.5 rounded-full ${allDone ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'}`}>
+                              {done}/{values.length}
+                            </span>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-slate-500">{new Date(row.loggedAt).toLocaleString()}</td>
                   </tr>

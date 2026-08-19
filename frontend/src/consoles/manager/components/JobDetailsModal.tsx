@@ -88,6 +88,18 @@ interface JobDetails {
       loggedAt: string;
       operator: { id: string; name: string } | null;
     }>;
+    sessions: Array<{
+      id: string;
+      operator: { id: string; name: string } | null;
+      batches: Array<{
+        id: string;
+        batchNumber: number;
+        loggedAt: string;
+        quantityData: Record<string, number>;
+        checklistData: Record<string, boolean> | null;
+        notes: string | null;
+      }>;
+    }>;
   }>;
   materialRequirements: Array<{
     id: string;
@@ -425,6 +437,52 @@ export function JobDetailsModal({ jobId, jobName, onClose, embedded = false }: J
                             )}
                           </div>
                         </div>
+
+                        {(() => {
+                          const batches = stage.sessions
+                            .flatMap((s) => s.batches.map((b) => ({ ...b, operatorName: s.operator?.name ?? null })))
+                            .sort((a, b) => a.batchNumber - b.batchNumber);
+                          return (
+                            <div className="p-4 border-t border-slate-200 bg-white">
+                              <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Batch Logs ({batches.length})</p>
+                              {batches.length === 0 ? (
+                                <EmptyState>No quantity batches logged for this stage.</EmptyState>
+                              ) : (
+                                <div className="space-y-2">
+                                  {batches.map((batch) => {
+                                    const checklistValues = batch.checklistData ? Object.values(batch.checklistData) : null;
+                                    const checklistDone = checklistValues ? checklistValues.filter(Boolean).length : null;
+                                    return (
+                                      <div key={batch.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <p className="font-semibold text-slate-900">Batch #{batch.batchNumber}</p>
+                                          <span className="text-[11px] text-slate-400">{formatDateTime(batch.loggedAt)} · {batch.operatorName ?? 'Unknown operator'}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                          {Object.entries(batch.quantityData).map(([metric, value]) => (
+                                            <span key={metric} className="px-2 py-0.5 bg-white border border-slate-200 rounded text-xs text-slate-600">
+                                              {metric}: <span className="font-semibold text-slate-800">{value}</span>
+                                            </span>
+                                          ))}
+                                          {checklistValues && (
+                                            <span
+                                              className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                                checklistDone === checklistValues.length ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'
+                                              }`}
+                                            >
+                                              Checklist {checklistDone}/{checklistValues.length}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {batch.notes && <p className="text-xs text-slate-500 italic mt-1.5">"{batch.notes}"</p>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>

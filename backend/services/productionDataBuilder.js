@@ -23,13 +23,13 @@ const WASTE_METRIC_PATTERN = /reject|waste|scrap|loss|defect/i;
 const FILL_METRIC_PATTERN = /fill/i;
 
 function buildProductionReport(job) {
-  const stageReports = job.stages.map((stage) => {
+  const stageReports = (job.stages ?? []).map((stage) => {
     const quantities = stage.blueprint?.quantities ?? [];
     const unitByMetric = Object.fromEntries(quantities.map((q) => [q.metricName, q.unitLabel]));
 
-    const batches = stage.sessions
+    const batches = (stage.sessions ?? [])
       .flatMap((session) =>
-        session.batches.map((entry) => ({
+        (session.batches ?? []).map((entry) => ({
           batchNumber: entry.batchNumber,
           loggedAt: entry.loggedAt,
           operatorName: session.operator?.name ?? null,
@@ -92,7 +92,7 @@ function buildProductionReport(job) {
     const primary = nonWasteMetrics[0];
     if (primary) {
       if (isFirst) {
-        const requirement = job.materialRequirements.find((m) => m.name.toLowerCase() === primary.name.toLowerCase());
+        const requirement = (job.materialRequirements ?? []).find((m) => m.name.toLowerCase() === primary.name.toLowerCase());
         materialsConsumed.push({ name: primary.name, qtyUsed: primary.total, unit: requirement?.unit ?? primary.unit, source: stage.stageName });
       } else {
         materialsConsumed.push({ name: primary.name, qtyUsed: primary.total, unit: primary.unit, source: stage.stageName });
@@ -105,7 +105,7 @@ function buildProductionReport(job) {
     }
   });
 
-  const scrapFromLogs = job.scrapLogs.reduce((sum, s) => sum + s.quantity, 0);
+  const scrapFromLogs = (job.scrapLogs ?? []).reduce((sum, s) => sum + s.quantity, 0);
   if (scrapFromLogs > 0) {
     scrapBreakdown.push({ source: 'Manager-logged waste', metric: 'ScrapLog', quantity: Math.round(scrapFromLogs * 100) / 100, unit: 'mixed' });
   }
@@ -144,7 +144,7 @@ function buildProductionDataPayload(job) {
     // completeStage — an entry can genuinely still have endedAt: null here.
     // ERP's schema requires a real end string, so unclosed entries are
     // dropped rather than sent as null.
-    downtime_log: job.downtimeLogs
+    downtime_log: (job.downtimeLogs ?? [])
       .filter((d) => d.endedAt !== null)
       .map((d) => ({
         start: d.startedAt,
