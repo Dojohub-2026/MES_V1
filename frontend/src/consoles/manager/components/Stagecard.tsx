@@ -28,6 +28,10 @@ interface StageCardProps {
   onAssignOperator: (tempId: string, operatorId: string) => void;
   onRemove: (tempId: string) => void;
   invalid: boolean;
+  // ERP work orders: the manager may only add processes and assign
+  // operators, not reorder or remove stages an ERP work order already
+  // specified.
+  locked?: boolean;
 }
 
 function computeWindow(allStages: StageDraft[], index: number, baseStart: Date) {
@@ -40,7 +44,7 @@ function computeWindow(allStages: StageDraft[], index: number, baseStart: Date) 
   return { start, end };
 }
 
-export function StageCard({ stage, index, allStages, isLast, operators, onAssignOperator, onRemove, invalid }: StageCardProps) {
+export function StageCard({ stage, index, allStages, isLast, operators, onAssignOperator, onRemove, invalid, locked = false }: StageCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stage.tempId });
 
   const style = {
@@ -64,24 +68,28 @@ export function StageCard({ stage, index, allStages, isLast, operators, onAssign
           invalid ? 'ring-2 ring-red-500' : showSkillWarning ? 'ring-2 ring-warning-400' : 'border-slate-200'
         }`}
       >
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label={`Drag ${stage.stageName} to reorder`}
-          title="Drag to reorder"
-          className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing cursor-grab touch-none"
-        >
-          <GripVertical size={16} />
-        </button>
+        {!locked && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label={`Drag ${stage.stageName} to reorder`}
+            title="Drag to reorder"
+            className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing cursor-grab touch-none"
+          >
+            <GripVertical size={16} />
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={() => onRemove(stage.tempId)}
-          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-        >
-          <X size={12} />
-        </button>
+        {!locked && (
+          <button
+            type="button"
+            onClick={() => onRemove(stage.tempId)}
+            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+          >
+            <X size={12} />
+          </button>
+        )}
 
         <div className="pl-8">
           <div className="flex items-center justify-between gap-2">

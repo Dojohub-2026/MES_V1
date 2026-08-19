@@ -193,6 +193,13 @@ async function getJob(req, res) {
               include: { operator: { select: { id: true, name: true } } },
             },
             scrapLogs: { orderBy: { loggedAt: 'desc' } },
+            sessions: {
+              orderBy: { startedAt: 'asc' },
+              include: {
+                operator: { select: { id: true, name: true } },
+                batches: { orderBy: { batchNumber: 'asc' } },
+              },
+            },
           },
         },
         materialRequirements: { orderBy: { sortOrder: 'asc' } },
