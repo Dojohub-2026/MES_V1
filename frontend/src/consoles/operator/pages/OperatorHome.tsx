@@ -169,6 +169,7 @@ export function OperatorHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showAllFeedback, setShowAllFeedback] = useState(false);
 
   const loadAssignments = useCallback(async () => {
     try {
@@ -277,7 +278,7 @@ export function OperatorHome() {
               <h3 className="text-sm font-bold text-slate-800">Manager Feedback</h3>
             </div>
             <div className="space-y-2">
-              {feedback.map((f) => (
+              {(showAllFeedback ? feedback : feedback.slice(0, 3)).map((f) => (
                 <div key={f.id} className="bg-white border border-slate-200 rounded-xl p-3">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 size={16} className="text-success-500 mt-0.5 flex-shrink-0" strokeWidth={2.5} />
@@ -296,6 +297,14 @@ export function OperatorHome() {
                 </div>
               ))}
             </div>
+            {feedback.length > 3 && (
+              <button
+                onClick={() => setShowAllFeedback((v) => !v)}
+                className="mt-2 text-xs font-semibold text-navy-600 hover:text-navy-700"
+              >
+                {showAllFeedback ? 'Show less' : `View all ${feedback.length}`}
+              </button>
+            )}
           </div>
         )}
       </main>
