@@ -148,6 +148,8 @@ export function Operations() {
   const [previewJob, setPreviewJob] = useState<{ id: string; name: string } | null>(null);
   const [inspectedJob, setInspectedJob] = useState<{ id: string; name: string } | null>(null);
   const inspectedPanelRef = useRef<HTMLDivElement>(null);
+  const [showAllDrafts, setShowAllDrafts] = useState(false);
+  const [showAllCompleted, setShowAllCompleted] = useState(false);
 
   // The inspect panel renders below the entire job list, so with more than
   // one active job it opens off-screen with no visible change at the click
@@ -440,37 +442,47 @@ export function Operations() {
             <p className="text-xs text-slate-500 mt-1">Jobs saved as drafts, or received from the ERP, appear here to finish building.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {draftJobs.map((job) => (
-              <div key={job.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-mono text-xs text-slate-500">{job.jobId}</span>
-                  {job.source === 'ERP' && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-info-100 text-info-700">ERP</span>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {(showAllDrafts ? draftJobs : draftJobs.slice(0, 2)).map((job) => (
+                <div key={job.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-xs text-slate-500">{job.jobId}</span>
+                    {job.source === 'ERP' && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-info-100 text-info-700">ERP</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-slate-900 truncate">{job.name}</p>
+                  {job.batchNumber && <p className="text-xs text-slate-500 mt-0.5">Batch {job.batchNumber}</p>}
+                  {job.scheduledStartAt && (
+                    <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                      <CalendarClock size={12} />
+                      {new Date(job.scheduledStartAt).toLocaleString()}
+                    </p>
                   )}
+                  <p className="text-xs text-slate-400 mt-1">{job.stages.length} stage{job.stages.length === 1 ? '' : 's'} built</p>
+                  {!job.lineId && (
+                    <p className="text-xs text-warning-600 mt-1 font-medium">No production line assigned yet</p>
+                  )}
+                  <button
+                    onClick={() => navigate(`/manager/job-builder?jobId=${job.id}`)}
+                    className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-semibold transition-all active:scale-[0.98]"
+                  >
+                    Continue in Job Builder
+                    <ArrowRight size={14} />
+                  </button>
                 </div>
-                <p className="text-sm font-semibold text-slate-900 truncate">{job.name}</p>
-                {job.batchNumber && <p className="text-xs text-slate-500 mt-0.5">Batch {job.batchNumber}</p>}
-                {job.scheduledStartAt && (
-                  <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                    <CalendarClock size={12} />
-                    {new Date(job.scheduledStartAt).toLocaleString()}
-                  </p>
-                )}
-                <p className="text-xs text-slate-400 mt-1">{job.stages.length} stage{job.stages.length === 1 ? '' : 's'} built</p>
-                {!job.lineId && (
-                  <p className="text-xs text-warning-600 mt-1 font-medium">No production line assigned yet</p>
-                )}
-                <button
-                  onClick={() => navigate(`/manager/job-builder?jobId=${job.id}`)}
-                  className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-navy-900 hover:bg-navy-800 text-white text-sm font-semibold transition-all active:scale-[0.98]"
-                >
-                  Continue in Job Builder
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {draftJobs.length > 2 && (
+              <button
+                onClick={() => setShowAllDrafts((v) => !v)}
+                className="mt-3 text-sm font-semibold text-navy-600 hover:text-navy-700"
+              >
+                {showAllDrafts ? 'Show less' : `View all ${draftJobs.length}`}
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -492,8 +504,9 @@ export function Operations() {
             <p className="text-xs text-slate-500 mt-1">Once a job finishes, ERP-sourced jobs can have their production data sent here.</p>
           </div>
         ) : (
+          <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {completedJobs.map((job) => {
+            {(showAllCompleted ? completedJobs : completedJobs.slice(0, 2)).map((job) => {
               const result = sendResult[job.id];
               return (
                 <div key={job.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
@@ -544,6 +557,15 @@ export function Operations() {
               );
             })}
           </div>
+          {completedJobs.length > 2 && (
+            <button
+              onClick={() => setShowAllCompleted((v) => !v)}
+              className="mt-3 text-sm font-semibold text-navy-600 hover:text-navy-700"
+            >
+              {showAllCompleted ? 'Show less' : `View all ${completedJobs.length}`}
+            </button>
+          )}
+          </>
         )}
       </div>
 

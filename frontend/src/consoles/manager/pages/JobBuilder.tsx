@@ -362,7 +362,7 @@ export default function JobBuilder() {
         </div>
         {jobSource === 'ERP' && (
           <span className="px-3 py-1.5 bg-info-100 text-info-700 text-xs font-bold rounded-full flex-shrink-0" title="Only adding processes and assigning operators is allowed for ERP work orders">
-            From ERP Work Order — locked except processes &amp; operators
+            From ERP Work Order
           </span>
         )}
       </div>
