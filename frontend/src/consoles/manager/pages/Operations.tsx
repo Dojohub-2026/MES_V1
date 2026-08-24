@@ -457,7 +457,7 @@ export function Operations() {
                   {job.scheduledStartAt && (
                     <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
                       <CalendarClock size={12} />
-                      {new Date(job.scheduledStartAt).toLocaleString()}
+                      <span className="font-medium text-slate-500">Scheduled Date:</span> {new Date(job.scheduledStartAt).toLocaleString()}
                     </p>
                   )}
                   <p className="text-xs text-slate-400 mt-1">{job.stages.length} stage{job.stages.length === 1 ? '' : 's'} built</p>
